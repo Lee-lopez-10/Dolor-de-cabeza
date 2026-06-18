@@ -17,18 +17,19 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, ".")));
 
 /* ============================================================
-   HELPER: query genérico
+   HELPER: query genérico - Compatible con PostgreSQL
    ============================================================ */
 async function query(q, params = []) {
   const pool = await getPool();
+  // Convertir parámetros de @nombre a $1, $2, etc.
   let sql = q;
   const values = [];
-  params.forEach(({ name, value }) => {
-    sql = sql.replace(new RegExp(`@${name}`, "g"), "?");
+  params.forEach(({ name, value }, index) => {
+    sql = sql.replace(new RegExp(`@${name}\\b`, 'g'), `$${index + 1}`);
     values.push(value);
   });
-  const [rows] = await pool.execute(sql, values);
-  return { recordset: rows };
+  const result = await pool.query(sql, values);
+  return { recordset: result.rows };
 }
 /* ============================================================
    CATEGORÍAS
@@ -42,7 +43,7 @@ app.get("/api/categorias", async (req, res) => {
               Nombre_categoria AS nombre,
               Tipo AS tipo
        FROM CATEGORIA
-       ORDER BY Nombre_categoria`,
+       ORDER BY Nombre_categoria` LIMIT 1,
     );
     res.json(r.recordset);
   } catch (e) {
@@ -55,9 +56,9 @@ app.post("/api/categorias", async (req, res) => {
     const { nombre, tipo } = req.body;
     const r = await query(
       `INSERT INTO CATEGORIA (Nombre_categoria, Tipo)
-       OUTPUT INSERTED.id_categoria AS id,
-              INSERTED.Nombre_categoria AS nombre,
-              INSERTED.Tipo AS tipo
+       RETURNING id_categoria AS id,
+              Nombre_categoria AS nombre,
+              Tipo AS tipo
        VALUES (@nombre, @tipo)`,
       [
         { name: "nombre", type: sql.NVarChar, value: nombre },
@@ -76,9 +77,9 @@ app.put("/api/categorias/:id", async (req, res) => {
     const r = await query(
       `UPDATE CATEGORIA
        SET Nombre_categoria = @nombre, Tipo = @tipo
-       OUTPUT INSERTED.id_categoria AS id,
-              INSERTED.Nombre_categoria AS nombre,
-              INSERTED.Tipo AS tipo
+       RETURNING id_categoria AS id,
+              Nombre_categoria AS nombre,
+              Tipo AS tipo
        WHERE id_categoria = @id`,
       [
         { name: "nombre", type: sql.NVarChar, value: nombre },
@@ -139,7 +140,7 @@ app.get("/api/proveedores", async (req, res) => {
               Correo       AS correo,
               Estado       AS estado
        FROM PROVEEDOR
-       ORDER BY Nombre`,
+       ORDER BY Nombre` LIMIT 1,
     );
     res.json(r.recordset);
   } catch (e) {
@@ -152,12 +153,12 @@ app.post("/api/proveedores", async (req, res) => {
     const { nombre, direccion, telefono, correo } = req.body;
     const r = await query(
       `INSERT INTO PROVEEDOR (Nombre, Direccion, Telefono, Correo, Estado, fecha_creacion, fecha_actualizacion)
-       OUTPUT INSERTED.id_proveedor AS id,
-              INSERTED.Nombre       AS nombre,
-              INSERTED.Direccion    AS direccion,
-              INSERTED.Telefono     AS telefono,
-              INSERTED.Correo       AS correo,
-              INSERTED.Estado       AS estado
+       RETURNING id_proveedor AS id,
+              Nombre       AS nombre,
+              Direccion    AS direccion,
+              Telefono     AS telefono,
+              Correo       AS correo,
+              Estado       AS estado
        VALUES (@nombre, @direccion, @telefono, @correo, 'Activo', GETDATE(), GETDATE())`,
       [
         { name: "nombre", type: sql.NVarChar, value: nombre },
@@ -180,12 +181,12 @@ app.put("/api/proveedores/:id", async (req, res) => {
        SET Nombre = @nombre, Direccion = @direccion,
            Telefono = @telefono, Correo = @correo,
            fecha_actualizacion = GETDATE()
-       OUTPUT INSERTED.id_proveedor AS id,
-              INSERTED.Nombre       AS nombre,
-              INSERTED.Direccion    AS direccion,
-              INSERTED.Telefono     AS telefono,
-              INSERTED.Correo       AS correo,
-              INSERTED.Estado       AS estado
+       RETURNING id_proveedor AS id,
+              Nombre       AS nombre,
+              Direccion    AS direccion,
+              Telefono     AS telefono,
+              Correo       AS correo,
+              Estado       AS estado
        WHERE id_proveedor = @id`,
       [
         { name: "nombre", type: sql.NVarChar, value: nombre },
@@ -249,7 +250,7 @@ app.get("/api/productos", async (req, res) => {
        FROM PRODUCTO p
        LEFT JOIN CATEGORIA c ON p.id_categoria = c.id_categoria
        LEFT JOIN EMPLEADO  e ON p.id_empleado_registro = e.id_empleado
-       ORDER BY p.Nombre`,
+       ORDER BY p.Nombre` LIMIT 1,
     );
     res.json(r.recordset);
   } catch (e) {
@@ -293,20 +294,20 @@ app.post("/api/productos", async (req, res) => {
           Paquetes, Unidades_por_paquete, Precio_compra_paquete, Precio_compra_unidad, Precio_venta_paquete,
           id_empleado_registro, fecha_ingreso,
           fecha_creacion, fecha_actualizacion)
-       OUTPUT INSERTED.id_producto             AS id,
-              INSERTED.Nombre                  AS nombre,
-              INSERTED.Descripcion             AS descripcion,
-              INSERTED.Precio_unitario         AS precio_unit,
-              INSERTED.Precio_mayorista        AS precio_may,
-              INSERTED.id_categoria            AS id_cat,
-              INSERTED.id_proveedor            AS id_prov,
-              INSERTED.Paquetes                AS paquetes,
-              INSERTED.Unidades_por_paquete    AS unidades_paquete,
-              INSERTED.Precio_compra_paquete   AS precio_compra_paq,
-              INSERTED.Precio_compra_unidad    AS precio_compra_uni,
-              INSERTED.Precio_venta_paquete    AS precio_venta_paq,
-              INSERTED.id_empleado_registro    AS id_empleado_registro,
-              INSERTED.fecha_ingreso           AS fecha_ingreso
+       RETURNING id_producto             AS id,
+              Nombre                  AS nombre,
+              Descripcion             AS descripcion,
+              Precio_unitario         AS precio_unit,
+              Precio_mayorista        AS precio_may,
+              id_categoria            AS id_cat,
+              id_proveedor            AS id_prov,
+              Paquetes                AS paquetes,
+              Unidades_por_paquete    AS unidades_paquete,
+              Precio_compra_paquete   AS precio_compra_paq,
+              Precio_compra_unidad    AS precio_compra_uni,
+              Precio_venta_paquete    AS precio_venta_paq,
+              id_empleado_registro    AS id_empleado_registro,
+              fecha_ingreso           AS fecha_ingreso
        VALUES (@nombre, @desc, @pu, @pm, @icat, @iprov, @paq, @upaq, @cpaq, @cuni, @vpaq,
                @iemp, @fingreso, GETDATE(), GETDATE())`,
       [
@@ -432,20 +433,20 @@ app.put("/api/productos/:id", async (req, res) => {
            id_empleado_registro  = @iemp,
            fecha_ingreso         = @fingreso,
            fecha_actualizacion   = GETDATE()
-       OUTPUT INSERTED.id_producto             AS id,
-              INSERTED.Nombre                  AS nombre,
-              INSERTED.Descripcion             AS descripcion,
-              INSERTED.Precio_unitario         AS precio_unit,
-              INSERTED.Precio_mayorista        AS precio_may,
-              INSERTED.id_categoria            AS id_cat,
-              INSERTED.id_proveedor            AS id_prov,
-              INSERTED.Paquetes                AS paquetes,
-              INSERTED.Unidades_por_paquete    AS unidades_paquete,
-              INSERTED.Precio_compra_paquete   AS precio_compra_paq,
-              INSERTED.Precio_compra_unidad    AS precio_compra_uni,
-              INSERTED.Precio_venta_paquete    AS precio_venta_paq,
-              INSERTED.id_empleado_registro    AS id_empleado_registro,
-              INSERTED.fecha_ingreso           AS fecha_ingreso
+       RETURNING id_producto             AS id,
+              Nombre                  AS nombre,
+              Descripcion             AS descripcion,
+              Precio_unitario         AS precio_unit,
+              Precio_mayorista        AS precio_may,
+              id_categoria            AS id_cat,
+              id_proveedor            AS id_prov,
+              Paquetes                AS paquetes,
+              Unidades_por_paquete    AS unidades_paquete,
+              Precio_compra_paquete   AS precio_compra_paq,
+              Precio_compra_unidad    AS precio_compra_uni,
+              Precio_venta_paquete    AS precio_venta_paq,
+              id_empleado_registro    AS id_empleado_registro,
+              fecha_ingreso           AS fecha_ingreso
        WHERE id_producto = @id`,
       [
         { name: "nombre", type: sql.NVarChar, value: nombre },
@@ -509,7 +510,7 @@ app.get("/api/clientes", async (req, res) => {
               Email      AS email,
               Estado     AS estado
        FROM CLIENTE
-       ORDER BY Nombre, Apellido`,
+       ORDER BY Nombre, Apellido` LIMIT 1,
     );
     res.json(r.recordset);
   } catch (e) {
@@ -522,13 +523,13 @@ app.post("/api/clientes", async (req, res) => {
     const { nombre, apellido, direccion, telefono, email } = req.body;
     const r = await query(
       `INSERT INTO CLIENTE (Nombre, Apellido, Direccion, Telefono, Email, Estado, fecha_creacion, fecha_actualizacion)
-       OUTPUT INSERTED.id_cliente AS id,
-              INSERTED.Nombre     AS nombre,
-              INSERTED.Apellido   AS apellido,
-              INSERTED.Direccion  AS direccion,
-              INSERTED.Telefono   AS telefono,
-              INSERTED.Email      AS email,
-              INSERTED.Estado     AS estado
+       RETURNING id_cliente AS id,
+              Nombre     AS nombre,
+              Apellido   AS apellido,
+              Direccion  AS direccion,
+              Telefono   AS telefono,
+              Email      AS email,
+              Estado     AS estado
        VALUES (@nombre, @apellido, @direccion, @telefono, @email, 'Activo', GETDATE(), GETDATE())`,
       [
         { name: "nombre", type: sql.NVarChar, value: nombre },
@@ -552,13 +553,13 @@ app.put("/api/clientes/:id", async (req, res) => {
        SET Nombre = @nombre, Apellido = @apellido, Direccion = @direccion,
            Telefono = @telefono, Email = @email,
            fecha_actualizacion = GETDATE()
-       OUTPUT INSERTED.id_cliente AS id,
-              INSERTED.Nombre     AS nombre,
-              INSERTED.Apellido   AS apellido,
-              INSERTED.Direccion  AS direccion,
-              INSERTED.Telefono   AS telefono,
-              INSERTED.Email      AS email,
-              INSERTED.Estado     AS estado
+       RETURNING id_cliente AS id,
+              Nombre     AS nombre,
+              Apellido   AS apellido,
+              Direccion  AS direccion,
+              Telefono   AS telefono,
+              Email      AS email,
+              Estado     AS estado
        WHERE id_cliente = @id`,
       [
         { name: "nombre", type: sql.NVarChar, value: nombre },
@@ -608,7 +609,7 @@ app.get("/api/empleados", async (req, res) => {
               Ruta        AS ruta,
               Estado      AS estado
        FROM EMPLEADO
-       ORDER BY Nombre, Apellido`,
+       ORDER BY Nombre, Apellido` LIMIT 1,
     );
     res.json(r.recordset);
   } catch (e) {
@@ -621,12 +622,12 @@ app.post("/api/empleados", async (req, res) => {
     const { nombre, apellido, correo, ruta } = req.body;
     const r = await query(
       `INSERT INTO EMPLEADO (Nombre, Apellido, Correo, Ruta, Estado, fecha_creacion, fecha_actualizacion)
-       OUTPUT INSERTED.id_empleado AS id,
-              INSERTED.Nombre      AS nombre,
-              INSERTED.Apellido    AS apellido,
-              INSERTED.Correo      AS correo,
-              INSERTED.Ruta        AS ruta,
-              INSERTED.Estado      AS estado
+       RETURNING id_empleado AS id,
+              Nombre      AS nombre,
+              Apellido    AS apellido,
+              Correo      AS correo,
+              Ruta        AS ruta,
+              Estado      AS estado
        VALUES (@nombre, @apellido, @correo, @ruta, 'Activo', GETDATE(), GETDATE())`,
       [
         { name: "nombre", type: sql.NVarChar, value: nombre },
@@ -648,12 +649,12 @@ app.put("/api/empleados/:id", async (req, res) => {
       `UPDATE EMPLEADO
        SET Nombre = @nombre, Apellido = @apellido, Correo = @correo, Ruta = @ruta,
            fecha_actualizacion = GETDATE()
-       OUTPUT INSERTED.id_empleado AS id,
-              INSERTED.Nombre      AS nombre,
-              INSERTED.Apellido    AS apellido,
-              INSERTED.Correo      AS correo,
-              INSERTED.Ruta        AS ruta,
-              INSERTED.Estado      AS estado
+       RETURNING id_empleado AS id,
+              Nombre      AS nombre,
+              Apellido    AS apellido,
+              Correo      AS correo,
+              Ruta        AS ruta,
+              Estado      AS estado
        WHERE id_empleado = @id`,
       [
         { name: "nombre", type: sql.NVarChar, value: nombre },
@@ -706,7 +707,7 @@ app.get("/api/inventario", async (req, res) => {
               i.Estado              AS estado
        FROM INVENTARIO i
        LEFT JOIN PRODUCTO p ON i.id_producto = p.id_producto
-       ORDER BY i.Fecha_movimiento DESC`,
+       ORDER BY i.Fecha_movimiento DESC` LIMIT 1,
     );
     res.json(r.recordset);
   } catch (e) {
@@ -756,13 +757,13 @@ app.post("/api/inventario", async (req, res) => {
     // Crear nuevo registro de inventario
     const r = await query(
       `INSERT INTO INVENTARIO (id_producto, Cantidad, Paquetes, Unidades_sueltas, Estado, Fecha_movimiento)
-       OUTPUT INSERTED.id_inventario AS id,
-              INSERTED.id_producto AS id_prod,
-              INSERTED.Cantidad AS cantidad,
-              INSERTED.Paquetes AS paquetes,
-              INSERTED.Unidades_sueltas AS unidades_sueltas,
-              INSERTED.Estado AS estado,
-              INSERTED.Fecha_movimiento AS fecha
+       RETURNING id_inventario AS id,
+              id_producto AS id_prod,
+              Cantidad AS cantidad,
+              Paquetes AS paquetes,
+              Unidades_sueltas AS unidades_sueltas,
+              Estado AS estado,
+              Fecha_movimiento AS fecha
        VALUES (@idp, @cant, @paq, @sueltas, 'Disponible', @fecha)`,
       [
         { name: "idp", type: sql.Int, value: parseInt(id_producto) },
@@ -808,7 +809,7 @@ app.post("/api/inventario", async (req, res) => {
     if (pTotal > 0) {
       try {
         const cajaRow = await query(
-          `SELECT TOP 1 id_caja, total_egresos FROM CAJA WHERE Estado = 'Abierta' ORDER BY fecha_apertura DESC`,
+          `SELECT id_caja, total_egresos FROM CAJA WHERE Estado = 'Abierta' ORDER BY fecha_apertura DESC` LIMIT 1, LIMIT 1
         );
         if (cajaRow.recordset.length > 0) {
           const caja = cajaRow.recordset[0];
@@ -873,7 +874,7 @@ app.get("/api/defectuosos", async (req, res) => {
               d.Descripcion   AS descripcion
        FROM PRODUCTO_DEFECTUOSO d
        LEFT JOIN PRODUCTO p ON d.id_producto = p.id_producto
-       ORDER BY d.Fecha DESC`,
+       ORDER BY d.Fecha DESC` LIMIT 1,
     );
     res.json(r.recordset);
   } catch (e) {
@@ -886,12 +887,12 @@ app.post("/api/defectuosos", async (req, res) => {
     const { id_inv, id_prod, cantidad, fecha, descripcion } = req.body;
     const r = await query(
       `INSERT INTO PRODUCTO_DEFECTUOSO (id_inventario, id_producto, Cantidad, Fecha, Descripcion)
-       OUTPUT INSERTED.id_defectuoso AS id,
-              INSERTED.id_inventario AS id_inv,
-              INSERTED.id_producto   AS id_prod,
-              INSERTED.Cantidad      AS cantidad,
-              INSERTED.Fecha         AS fecha,
-              INSERTED.Descripcion   AS descripcion
+       RETURNING id_defectuoso AS id,
+              id_inventario AS id_inv,
+              id_producto   AS id_prod,
+              Cantidad      AS cantidad,
+              Fecha         AS fecha,
+              Descripcion   AS descripcion
        VALUES (@idinv, @idprod, @cant, @fecha, @desc)`,
       [
         { name: "idinv", type: sql.Int, value: parseInt(id_inv) },
@@ -921,12 +922,12 @@ app.put("/api/defectuosos/:id", async (req, res) => {
            Cantidad      = @cant,
            Fecha         = @fecha,
            Descripcion   = @desc
-       OUTPUT INSERTED.id_defectuoso AS id,
-              INSERTED.id_inventario AS id_inv,
-              INSERTED.id_producto   AS id_prod,
-              INSERTED.Cantidad      AS cantidad,
-              INSERTED.Fecha         AS fecha,
-              INSERTED.Descripcion   AS descripcion
+       RETURNING id_defectuoso AS id,
+              id_inventario AS id_inv,
+              id_producto   AS id_prod,
+              Cantidad      AS cantidad,
+              Fecha         AS fecha,
+              Descripcion   AS descripcion
        WHERE id_defectuoso = @id`,
       [
         { name: "idinv", type: sql.Int, value: parseInt(id_inv) },
@@ -977,7 +978,7 @@ app.get("/api/ventas", async (req, res) => {
        FROM FACTURA_VENTA f
        LEFT JOIN CLIENTE  c ON f.id_cliente  = c.id_cliente
        LEFT JOIN EMPLEADO e ON f.id_empleado = e.id_empleado
-       ORDER BY f.Fecha DESC`,
+       ORDER BY f.Fecha DESC` LIMIT 1,
     );
     res.json(r.recordset);
   } catch (e) {
@@ -991,7 +992,7 @@ app.post("/api/ventas", async (req, res) => {
 
     // VERIFICAR QUE HAYA CAJA ABIERTA Y QUE SEA EL RESPONSABLE
     const cajaRow = await query(
-      `SELECT TOP 1 id_caja, id_empleado, Estado FROM CAJA WHERE Estado = 'Abierta' ORDER BY fecha_apertura DESC`,
+      `SELECT id_caja, id_empleado, Estado FROM CAJA WHERE Estado = 'Abierta' ORDER BY fecha_apertura DESC` LIMIT 1, LIMIT 1
     );
 
     if (cajaRow.recordset.length === 0) {
@@ -1021,11 +1022,11 @@ app.post("/api/ventas", async (req, res) => {
     // Proceder con la venta
     const r = await query(
       `INSERT INTO FACTURA_VENTA (id_cliente, id_empleado, Fecha, Total)
-       OUTPUT INSERTED.id_factura  AS id,
-              INSERTED.id_cliente  AS id_cli,
-              INSERTED.id_empleado AS id_emp,
-              INSERTED.Fecha       AS fecha,
-              INSERTED.Total       AS total
+       RETURNING id_factura  AS id,
+              id_cliente  AS id_cli,
+              id_empleado AS id_emp,
+              Fecha       AS fecha,
+              Total       AS total
        VALUES (@idcli, @idemp, @fecha, @total)`,
       [
         { name: "idcli", type: sql.Int, value: parseInt(id_cli) },
@@ -1079,11 +1080,11 @@ app.put("/api/ventas/:id", async (req, res) => {
     const r = await query(
       `UPDATE FACTURA_VENTA
        SET id_cliente = @idcli, id_empleado = @idemp, Fecha = @fecha, Total = @total
-       OUTPUT INSERTED.id_factura  AS id,
-              INSERTED.id_cliente  AS id_cli,
-              INSERTED.id_empleado AS id_emp,
-              INSERTED.Fecha       AS fecha,
-              INSERTED.Total       AS total
+       RETURNING id_factura  AS id,
+              id_cliente  AS id_cli,
+              id_empleado AS id_emp,
+              Fecha       AS fecha,
+              Total       AS total
        WHERE id_factura = @id`,
       [
         { name: "idcli", type: sql.Int, value: parseInt(id_cli) },
@@ -1132,7 +1133,7 @@ app.get("/api/detalles", async (req, res) => {
               dv.Total           AS total
        FROM DETALLE_VENTA dv
        LEFT JOIN PRODUCTO p ON dv.id_producto = p.id_producto
-       ORDER BY dv.id_detalle`,
+       ORDER BY dv.id_detalle` LIMIT 1,
     );
     res.json(r.recordset);
   } catch (e) {
@@ -1147,12 +1148,12 @@ app.post("/api/detalles", async (req, res) => {
     // 1. Insertar el detalle de venta
     const r = await query(
       `INSERT INTO DETALLE_VENTA (id_factura, id_producto, Cantidad, Precio_unitario, Total)
-       OUTPUT INSERTED.id_detalle      AS id,
-              INSERTED.id_factura      AS id_fac,
-              INSERTED.id_producto     AS id_prod,
-              INSERTED.Cantidad        AS cantidad,
-              INSERTED.Precio_unitario AS precio_unit,
-              INSERTED.Total           AS total
+       RETURNING id_detalle      AS id,
+              id_factura      AS id_fac,
+              id_producto     AS id_prod,
+              Cantidad        AS cantidad,
+              Precio_unitario AS precio_unit,
+              Total           AS total
        VALUES (@idfac, @idprod, @cant, @pu, @total)`,
       [
         { name: "idfac", type: sql.Int, value: parseInt(id_fac) },
@@ -1179,7 +1180,7 @@ app.post("/api/detalles", async (req, res) => {
       `SELECT id_inventario, Cantidad, Paquetes, Unidades_sueltas 
        FROM INVENTARIO 
        WHERE id_producto = @id AND Estado = 'Disponible' AND Cantidad > 0
-       ORDER BY Fecha_movimiento ASC`,
+       ORDER BY Fecha_movimiento ASC` LIMIT 1,
       [{ name: "id", type: sql.Int, value: parseInt(id_prod) }],
     );
 
@@ -1249,12 +1250,12 @@ app.put("/api/detalles/:id", async (req, res) => {
       `UPDATE DETALLE_VENTA
        SET id_factura = @idfac, id_producto = @idprod,
            Cantidad = @cant, Precio_unitario = @pu, Total = @total
-       OUTPUT INSERTED.id_detalle      AS id,
-              INSERTED.id_factura      AS id_fac,
-              INSERTED.id_producto     AS id_prod,
-              INSERTED.Cantidad        AS cantidad,
-              INSERTED.Precio_unitario AS precio_unit,
-              INSERTED.Total           AS total
+       RETURNING id_detalle      AS id,
+              id_factura      AS id_fac,
+              id_producto     AS id_prod,
+              Cantidad        AS cantidad,
+              Precio_unitario AS precio_unit,
+              Total           AS total
        WHERE id_detalle = @id`,
       [
         { name: "idfac", type: sql.Int, value: parseInt(id_fac) },
@@ -1358,14 +1359,14 @@ app.get("/api/dashboard", async (req, res) => {
       ),
 
       // caja abierta
-      query(`SELECT TOP 1 Estado, monto_inicial, monto_final,
+      query(`SELECT Estado, monto_inicial, monto_final,
                           total_ventas, total_ingresos, total_egresos, ganancia
              FROM CAJA
              WHERE Estado = 'Abierta'
-             ORDER BY fecha_apertura DESC`),
+             ORDER BY fecha_apertura DESC`) LIMIT 1,
 
       // últimas 7 ventas
-      query(`SELECT TOP 7
+      query(`SELECT
                     f.id_factura  AS id,
                     f.Fecha       AS fecha,
                     f.Total       AS total,
@@ -1374,7 +1375,7 @@ app.get("/api/dashboard", async (req, res) => {
              FROM FACTURA_VENTA f
              LEFT JOIN CLIENTE  c ON f.id_cliente  = c.id_cliente
              LEFT JOIN EMPLEADO e ON f.id_empleado = e.id_empleado
-             ORDER BY f.Fecha DESC`),
+             ORDER BY f.Fecha DESC`) LIMIT 1,
     ]);
 
     const vh = ventasHoyR.recordset[0];
@@ -1428,7 +1429,7 @@ app.get("/api/dashboard", async (req, res) => {
 app.get("/api/caja/actual", async (req, res) => {
   try {
     const r = await query(
-      `SELECT TOP 1
+      `SELECT
               c.id_caja, c.id_empleado,
               e.Nombre + ' ' + e.Apellido AS empleado_nombre,
               c.fecha_apertura, c.hora_apertura,
@@ -1438,7 +1439,7 @@ app.get("/api/caja/actual", async (req, res) => {
        FROM CAJA c
        LEFT JOIN EMPLEADO e ON c.id_empleado = e.id_empleado
        WHERE c.Estado = 'Abierta'
-       ORDER BY c.fecha_apertura DESC`,
+       ORDER BY c.fecha_apertura DESC` LIMIT 1,
     );
     res.json(r.recordset[0] || null);
   } catch (e) {
@@ -1451,7 +1452,7 @@ app.post("/api/caja/apertura", async (req, res) => {
   try {
     // Verificar que no haya caja abierta
     const existe = await query(
-      `SELECT TOP 1 id_caja FROM CAJA WHERE Estado = 'Abierta'`,
+      `SELECT id_caja FROM CAJA WHERE Estado = 'Abierta'`,
     );
     if (existe.recordset.length > 0) {
       return res.status(400).json({ error: "Ya existe una caja abierta." });
@@ -1466,8 +1467,8 @@ app.post("/api/caja/apertura", async (req, res) => {
          (id_empleado, fecha_apertura, hora_apertura,
           monto_inicial, total_ventas, total_ingresos,
           total_egresos, monto_final, ganancia, Estado)
-       OUTPUT INSERTED.id_caja, INSERTED.Estado,
-              INSERTED.monto_inicial, INSERTED.fecha_apertura, INSERTED.hora_apertura
+       RETURNING id_caja, Estado,
+              monto_inicial, fecha_apertura, hora_apertura
        VALUES (@idemp, @fecha, @hora, @monto, 0, 0, 0, 0, 0, 'Abierta')`,
       [
         { name: "idemp", type: sql.Int, value: parseInt(id_empleado) },
@@ -1486,9 +1487,9 @@ app.post("/api/caja/apertura", async (req, res) => {
 app.post("/api/caja/cierre", async (req, res) => {
   try {
     const cajaRow = await query(
-      `SELECT TOP 1 id_caja, fecha_apertura, hora_apertura, total_ventas, total_ingresos, total_egresos
+      `SELECT id_caja, fecha_apertura, hora_apertura, total_ventas, total_ingresos, total_egresos
        FROM CAJA WHERE Estado = 'Abierta'
-       ORDER BY fecha_apertura DESC`,
+       ORDER BY fecha_apertura DESC` LIMIT 1,
     );
     if (cajaRow.recordset.length === 0) {
       return res.status(400).json({ error: "No hay caja abierta." });
@@ -1558,20 +1559,20 @@ app.post("/api/caja/cierre", async (req, res) => {
 app.get("/api/caja/movimientos", async (req, res) => {
   try {
     const cajaRow = await query(
-      `SELECT TOP 1 id_caja FROM CAJA WHERE Estado = 'Abierta' ORDER BY fecha_apertura DESC`,
+      `SELECT id_caja FROM CAJA WHERE Estado = 'Abierta' ORDER BY fecha_apertura DESC` LIMIT 1, LIMIT 1
     );
     if (cajaRow.recordset.length === 0) {
       return res.json([]);
     }
     const idCaja = cajaRow.recordset[0].id_caja;
     const r = await query(
-      `SELECT TOP 50
+      `SELECT
               id_movimiento AS id,
               id_caja,
               Tipo, Descripcion, Monto, Fecha, Hora
        FROM MOVIMIENTO_CAJA
        WHERE id_caja = @idc
-       ORDER BY Fecha DESC, Hora DESC`,
+       ORDER BY Fecha DESC, Hora DESC` LIMIT 1,
       [{ name: "idc", type: sql.Int, value: idCaja }],
     );
     res.json(r.recordset);
@@ -1584,9 +1585,9 @@ app.get("/api/caja/movimientos", async (req, res) => {
 app.post("/api/caja/movimientos", async (req, res) => {
   try {
     const cajaRow = await query(
-      `SELECT TOP 1 id_caja, total_ingresos, total_egresos
+      `SELECT id_caja, total_ingresos, total_egresos
        FROM CAJA WHERE Estado = 'Abierta'
-       ORDER BY fecha_apertura DESC`,
+       ORDER BY fecha_apertura DESC` LIMIT 1,
     );
     if (cajaRow.recordset.length === 0) {
       return res.status(400).json({ error: "No hay caja abierta." });
@@ -1693,7 +1694,7 @@ app.get("/api/reportes/compras", async (req, res) => {
        LEFT JOIN PROVEEDOR prov ON c.id_proveedor = prov.id_proveedor
        LEFT JOIN EMPLEADO e ON c.id_empleado = e.id_empleado
        ${whereClause}
-       ORDER BY c.Fecha DESC, p.Nombre`,
+       ORDER BY c.Fecha DESC, p.Nombre` LIMIT 1,
       params,
     );
     res.json(r.recordset);
@@ -1776,7 +1777,7 @@ app.get("/api/exportar/excel/:tipo", async (req, res) => {
                i.Fecha_movimiento AS Fecha
         FROM INVENTARIO i
         LEFT JOIN PRODUCTO p ON i.id_producto = p.id_producto
-        ORDER BY p.Nombre
+        ORDER BY p.Nombre LIMIT 1
       `);
       data = r.recordset;
       filename = "inventario.xlsx";
@@ -1793,7 +1794,7 @@ app.get("/api/exportar/excel/:tipo", async (req, res) => {
     } else if (tipo === "clientes") {
       const r = await query(`
         SELECT id_cliente AS ID, Nombre, Apellido, Direccion, Telefono, Email, Estado
-        FROM CLIENTE ORDER BY Nombre, Apellido
+        FROM CLIENTE ORDER BY Nombre, Apellido LIMIT 1
       `);
       data = r.recordset;
       filename = "clientes.xlsx";
@@ -1810,7 +1811,7 @@ app.get("/api/exportar/excel/:tipo", async (req, res) => {
     } else if (tipo === "empleados") {
       const r = await query(`
         SELECT id_empleado AS ID, Nombre, Apellido, Correo, Ruta, Estado
-        FROM EMPLEADO ORDER BY Nombre, Apellido
+        FROM EMPLEADO ORDER BY Nombre, Apellido LIMIT 1
       `);
       data = r.recordset;
       filename = "empleados.xlsx";
@@ -1826,7 +1827,7 @@ app.get("/api/exportar/excel/:tipo", async (req, res) => {
     } else if (tipo === "proveedores") {
       const r = await query(`
         SELECT id_proveedor AS ID, Nombre, Direccion, Telefono, Correo, Estado
-        FROM PROVEEDOR ORDER BY Nombre
+        FROM PROVEEDOR ORDER BY Nombre LIMIT 1
       `);
       data = r.recordset;
       filename = "proveedores.xlsx";
@@ -1852,7 +1853,7 @@ app.get("/api/exportar/excel/:tipo", async (req, res) => {
                p.Precio_venta_paquete  AS Precio_Venta_Paq
         FROM PRODUCTO p
         LEFT JOIN CATEGORIA c ON p.id_categoria = c.id_categoria
-        ORDER BY p.Nombre
+        ORDER BY p.Nombre LIMIT 1
       `);
       data = r.recordset;
       filename = "productos.xlsx";
@@ -1924,7 +1925,7 @@ app.get("/api/exportar/excel/:tipo", async (req, res) => {
          LEFT JOIN PROVEEDOR prov ON c.id_proveedor = prov.id_proveedor
          LEFT JOIN EMPLEADO e ON c.id_empleado = e.id_empleado
          ${whereClause}
-         ORDER BY c.Fecha DESC, p.Nombre`,
+         ORDER BY c.Fecha DESC, p.Nombre` LIMIT 1,
         params,
       );
       data = r.recordset;
@@ -2030,7 +2031,7 @@ app.get("/api/exportar/pdf/:tipo", async (req, res) => {
                CONVERT(VARCHAR, i.Fecha_movimiento, 103) AS fecha
         FROM INVENTARIO i
         LEFT JOIN PRODUCTO p ON i.id_producto = p.id_producto
-        ORDER BY p.Nombre
+        ORDER BY p.Nombre LIMIT 1
       `);
       headers = [
         "ID",
@@ -2063,7 +2064,7 @@ app.get("/api/exportar/pdf/:tipo", async (req, res) => {
         LEFT JOIN PRODUCTO  p  ON i.id_producto  = p.id_producto
         LEFT JOIN PROVEEDOR pr ON p.id_proveedor = pr.id_proveedor
         WHERE i.Estado = 'Disponible'
-        ORDER BY i.Fecha_movimiento DESC
+        ORDER BY i.Fecha_movimiento DESC LIMIT 1
       `);
       headers = [
         "ID",
@@ -2086,7 +2087,7 @@ app.get("/api/exportar/pdf/:tipo", async (req, res) => {
     } else if (tipo === "movimientos") {
       titulo = "Movimientos de Caja";
       const cajaRow = await query(
-        `SELECT TOP 1 id_caja FROM CAJA ORDER BY fecha_apertura DESC`,
+        `SELECT id_caja FROM CAJA ORDER BY fecha_apertura DESC` LIMIT 1,
       );
       if (cajaRow.recordset.length > 0) {
         const idCaja = cajaRow.recordset[0].id_caja;
@@ -2096,7 +2097,7 @@ app.get("/api/exportar/pdf/:tipo", async (req, res) => {
                  CONVERT(VARCHAR, m.Fecha, 103) AS fecha, m.Hora
           FROM MOVIMIENTO_CAJA m
           WHERE m.id_caja = @idc
-          ORDER BY m.Fecha DESC, m.Hora DESC
+          ORDER BY m.Fecha DESC, m.Hora DESC LIMIT 1
         `,
           [{ name: "idc", type: sql.Int, value: idCaja }],
         );
@@ -2338,3 +2339,6 @@ app.get("/api/reportes/ganancias/mensuales", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Servidor corriendo en el puerto ${PORT}`);
 });
+
+
+
