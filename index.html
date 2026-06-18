@@ -1,0 +1,1766 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Comercializadora Rosales S.A.</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- ===== LOADER ===== -->
+    <div id="app-loader" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: flex; align-items: center; justify-content: center; z-index: 9999; font-family: 'DM Sans', sans-serif;">
+      <div style="text-align: center;">
+        <div style="width: 60px; height: 60px; border: 4px solid #f3f3f3; border-top: 4px solid #6366f1; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+        <h2 style="color: #333; margin: 0 0 10px;">Comercializadora Rosales</h2>
+        <p style="color: #666; margin: 0;">Cargando datos del sistema...</p>
+      </div>
+    </div>
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+    
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-icon">🌹</div>
+        <div class="logo-text">
+          <span class="logo-name">Comercializadora Rosales</span>
+          <span class="logo-sub">S.A. DE C.V.</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a class="nav-item active" data-page="dashboard">
+          <span class="nav-icon">📊</span
+          ><span class="nav-label">Dashboard</span>
+        </a>
+        <a class="nav-item" data-page="productos">
+          <span class="nav-icon">📦</span
+          ><span class="nav-label">Productos</span>
+        </a>
+        <a class="nav-item" data-page="clientes">
+          <span class="nav-icon">👥</span
+          ><span class="nav-label">Clientes</span>
+        </a>
+        <a class="nav-item" data-page="empleados">
+          <span class="nav-icon">👔</span
+          ><span class="nav-label">Empleados</span>
+        </a>
+        <a class="nav-item" data-page="inventario">
+          <span class="nav-icon">🏭</span
+          ><span class="nav-label">Inventario</span>
+        </a>
+        <a class="nav-item" data-page="proveedores">
+          <span class="nav-icon">🚚</span
+          ><span class="nav-label">Proveedores</span>
+        </a>
+        <a class="nav-item" data-page="ventas">
+          <span class="nav-icon">🧾</span><span class="nav-label">Ventas</span>
+        </a>
+        <a class="nav-item" data-page="caja">
+          <span class="nav-icon">💵</span><span class="nav-label">Caja</span>
+        </a>
+        <a class="nav-item" data-page="reportes">
+          <span class="nav-icon">📈</span
+          ><span class="nav-label">Reportes</span>
+        </a>
+        <a class="nav-item" data-page="defectuosos">
+          <span class="nav-icon">⚠️</span
+          ><span class="nav-label">Defectuosos</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="main-content">
+      <!-- ===== PAGE: DASHBOARD ===== -->
+      <section id="page-dashboard" class="page active">
+        <div class="page-header">
+          <div>
+            <h1>Dashboard</h1>
+            <p class="breadcrumb">Inicio / Panel Principal</p>
+          </div>
+        </div>
+
+        <!-- 9 Stat Cards -->
+        <div class="stats-grid">
+          <div class="stat-card" id="stat-ventas-hoy">
+            <div class="stat-icon">📅</div>
+            <div class="stat-info">
+              <span class="stat-label">VENTAS DEL DÍA</span>
+              <span class="stat-value" id="dash-ventas-hoy">--</span>
+            </div>
+          </div>
+          <div class="stat-card highlight" id="stat-monto-hoy">
+            <div class="stat-icon">💰</div>
+            <div class="stat-info">
+              <span class="stat-label">MONTO VENTAS HOY</span>
+              <span class="stat-value" id="dash-monto-hoy">--</span>
+            </div>
+          </div>
+          <div class="stat-card info" id="stat-ganancia-mes">
+            <div class="stat-icon">📈</div>
+            <div class="stat-info">
+              <span class="stat-label">GANANCIA MENSUAL</span>
+              <span class="stat-value" id="dash-ganancia-mes">--</span>
+            </div>
+          </div>
+          <div class="stat-card" id="stat-productos-total">
+            <div class="stat-icon">📦</div>
+            <div class="stat-info">
+              <span class="stat-label">PRODUCTOS TOTALES</span>
+              <span class="stat-value" id="dash-productos-total">--</span>
+            </div>
+          </div>
+          <div class="stat-card warning" id="stat-bajo-stock">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-info">
+              <span class="stat-label">BAJO STOCK</span>
+              <span class="stat-value" id="dash-bajo-stock">--</span>
+            </div>
+          </div>
+          <div class="stat-card" id="stat-clientes-activos">
+            <div class="stat-icon">👥</div>
+            <div class="stat-info">
+              <span class="stat-label">CLIENTES ACTIVOS</span>
+              <span class="stat-value" id="dash-clientes-activos">--</span>
+            </div>
+          </div>
+          <div class="stat-card" id="stat-empleados-activos">
+            <div class="stat-icon">👔</div>
+            <div class="stat-info">
+              <span class="stat-label">EMPLEADOS ACTIVOS</span>
+              <span class="stat-value" id="dash-empleados-activos">--</span>
+            </div>
+          </div>
+          <div class="stat-card" id="stat-inventario-paquetes">
+            <div class="stat-icon">📦</div>
+            <div class="stat-info">
+              <span class="stat-label">INV. EN PAQUETES</span>
+              <span class="stat-value" id="dash-inventario-paquetes">--</span>
+            </div>
+          </div>
+          <div class="stat-card" id="stat-inventario-unidades">
+            <div class="stat-icon">🏭</div>
+            <div class="stat-info">
+              <span class="stat-label">INV. UNIDADES SUELTAS</span>
+              <span class="stat-value" id="dash-inventario-unidades">--</span>
+            </div>
+          </div>
+          <div class="stat-card" id="stat-caja">
+            <div class="stat-icon">💵</div>
+            <div class="stat-info">
+              <span class="stat-label">ESTADO DE CAJA</span>
+              <span class="stat-value" id="dash-caja-estado">--</span>
+              <span
+                style="font-size: 0.85rem; color: var(--text-secondary)"
+                id="dash-caja-monto"
+                >$0.00</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Resumen de Caja (visible solo si caja abierta) -->
+        <div
+          class="table-card mt-16"
+          id="dash-caja-resumen-box"
+          style="display: none"
+        ></div>
+
+        <!-- Últimas Ventas -->
+        <div class="table-card mt-24">
+          <h2 class="section-title">🧾 Últimas Ventas</h2>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>CLIENTE</th>
+                <th>EMPLEADO</th>
+                <th>FECHA</th>
+                <th>TOTAL</th>
+              </tr>
+            </thead>
+            <tbody id="dash-ventas-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== PAGE: PRODUCTOS ===== -->
+      <section id="page-productos" class="page">
+        <div class="page-header">
+          <div>
+            <h1>Productos</h1>
+            <p class="breadcrumb">Inicio / Productos</p>
+          </div>
+          <button class="btn-primary" onclick="openModal('modal-producto')">
+            + Nuevo Producto
+          </button>
+        </div>
+
+        <div class="tab-bar">
+          <button
+            class="tab-btn active"
+            data-tab="limpieza"
+            onclick="filterProductos('limpieza', this)"
+          >
+            🧴 Productos de Limpieza
+          </button>
+          <button
+            class="tab-btn"
+            data-tab="desechables"
+            onclick="filterProductos('desechables', this)"
+          >
+            🗑️ Productos Desechables
+          </button>
+        </div>
+
+        <div class="table-card">
+          <div class="table-toolbar">
+            <input
+              type="text"
+              class="search-input"
+              placeholder="🔍 Buscar producto..."
+              oninput="searchProductos(this.value)"
+            />
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>NOMBRE</th>
+                <th>CATEGORÍA</th>
+                <th>PRECIO UNIT.</th>
+                <th>PRECIO MAY.</th>
+                <th>PRECIO PAQ.</th>
+                <th>STOCK</th>
+                <th>PROVEEDOR</th>
+                <th>ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody id="productos-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== PAGE: CLIENTES ===== -->
+      <section id="page-clientes" class="page">
+        <div class="page-header">
+          <div>
+            <h1>Clientes</h1>
+            <p class="breadcrumb">Inicio / Clientes</p>
+          </div>
+          <button class="btn-primary" onclick="openModal('modal-cliente')">
+            + Nuevo Cliente
+          </button>
+        </div>
+        <div class="table-card">
+          <div class="table-toolbar">
+            <input
+              type="text"
+              class="search-input"
+              placeholder="🔍 Buscar cliente..."
+              oninput="searchClientes(this.value)"
+            />
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>NOMBRE</th>
+                <th>APELLIDO</th>
+                <th>DIRECCIÓN</th>
+                <th>TELÉFONO</th>
+                <th>EMAIL</th>
+                <th>ESTADO</th>
+                <th>ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody id="clientes-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== PAGE: EMPLEADOS ===== -->
+      <section id="page-empleados" class="page">
+        <div class="page-header">
+          <div>
+            <h1>Empleados</h1>
+            <p class="breadcrumb">Inicio / Empleados</p>
+          </div>
+          <button class="btn-primary" onclick="openModal('modal-empleado')">
+            + Nuevo Empleado
+          </button>
+        </div>
+        <div class="table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>NOMBRE</th>
+                <th>APELLIDO</th>
+                <th>CORREO</th>
+                <th>RUTA</th>
+                <th>ESTADO</th>
+                <th>ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody id="empleados-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== PAGE: INVENTARIO ===== -->
+      <section id="page-inventario" class="page">
+        <div class="page-header">
+          <div>
+            <h1>Inventario</h1>
+            <p class="breadcrumb">Inicio / Inventario</p>
+          </div>
+        </div>
+        
+        <!-- Sección 1: Productos de Limpieza -->
+        <div class="table-card">
+          <h2 class="section-title">🧴 Inventario de Productos de Limpieza</h2>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>PRODUCTO</th>
+                <th>CATEGORÍA</th>
+                <th>PAQ. DISPONIBLES</th>
+                <th>UDS/PAQ</th>
+                <th>TOTAL UNIDADES</th>
+                <th>PRECIO VENTA UNIDAD</th>
+                <th>PROVEEDOR</th>
+                <th>FECHA INGRESO</th>
+                <th>ESTADO</th>
+              </tr>
+            </thead>
+            <tbody id="inventario-limpieza-table"></tbody>
+          </table>
+        </div>
+
+        <!-- Sección 2: Productos Desechables -->
+        <div class="table-card mt-24">
+          <h2 class="section-title">🗑️ Inventario de Productos Desechables</h2>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>PRODUCTO</th>
+                <th>CATEGORÍA</th>
+                <th>PAQ. DISPONIBLES</th>
+                <th>UDS/PAQ</th>
+                <th>TOTAL UNIDADES</th>
+                <th>PRECIO VENTA UNIDAD</th>
+                <th>PROVEEDOR</th>
+                <th>FECHA INGRESO</th>
+                <th>ESTADO</th>
+              </tr>
+            </thead>
+            <tbody id="inventario-desechables-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== PAGE: PROVEEDORES ===== -->
+      <section id="page-proveedores" class="page">
+        <div class="page-header">
+          <div>
+            <h1>Proveedores</h1>
+            <p class="breadcrumb">Inicio / Proveedores</p>
+          </div>
+          <button class="btn-primary" onclick="openModal('modal-proveedor')">
+            + Nuevo Proveedor
+          </button>
+        </div>
+        <div class="table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>NOMBRE</th>
+                <th>DIRECCIÓN</th>
+                <th>TELÉFONO</th>
+                <th>CORREO</th>
+                <th>ESTADO</th>
+                <th>ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody id="proveedores-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== PAGE: VENTAS ===== -->
+      <section id="page-ventas" class="page">
+        <div class="page-header">
+          <div>
+            <h1>Ventas</h1>
+            <p class="breadcrumb">Inicio / Ventas</p>
+          </div>
+          <button class="btn-primary" onclick="openModal('modal-venta')">
+            + Nueva Venta
+          </button>
+        </div>
+        <div class="table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>CLIENTE</th>
+                <th>EMPLEADO</th>
+                <th>FECHA</th>
+                <th>TOTAL</th>
+                <th>ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody id="ventas-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== PAGE: CAJA ===== -->
+      <section id="page-caja" class="page">
+        <div class="page-header">
+          <div>
+            <h1>Control de Caja</h1>
+            <p class="breadcrumb">Inicio / Caja</p>
+          </div>
+        </div>
+
+        <!-- Estado y botones de apertura/cierre -->
+        <div class="table-card" id="caja-estado-card">
+          <div
+            style="padding: 24px; text-align: center; color: var(--text-muted)"
+          >
+            Cargando estado de caja...
+          </div>
+        </div>
+
+        <!-- Resumen de caja actual -->
+        <div class="table-card mt-16" id="caja-resumen-card"></div>
+
+        <!-- Botones de movimientos (visible solo si caja abierta) -->
+        <div
+          class="mt-16"
+          id="caja-botones-movimientos"
+          style="display: none; gap: 10px"
+        >
+          <button class="btn-primary" onclick="abrirModalMovimiento('Ingreso')">
+            ➕ Registrar Ingreso
+          </button>
+          <button
+            class="btn-secondary"
+            onclick="abrirModalMovimiento('Egreso')"
+            style="border-color: var(--danger); color: var(--danger)"
+          >
+            ➖ Registrar Egreso
+          </button>
+        </div>
+
+        <!-- Tabla de movimientos del día -->
+        <div class="table-card mt-16">
+          <h2 class="section-title">📋 Movimientos del Día</h2>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>TIPO</th>
+                <th>DESCRIPCIÓN</th>
+                <th>MONTO</th>
+                <th>FECHA</th>
+                <th>HORA</th>
+              </tr>
+            </thead>
+            <tbody id="caja-movimientos-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== PAGE: REPORTES ===== -->
+      <section id="page-reportes" class="page">
+        <div class="page-header">
+          <div>
+            <h1>Reportes</h1>
+            <p class="breadcrumb">Inicio / Reportes</p>
+          </div>
+        </div>
+
+        <!-- Tabs Ventas / Compras / Ganancias -->
+        <div class="tab-bar" style="margin-bottom: 0">
+          <button
+            class="tab-btn active"
+            data-tab-rep="ventas"
+            onclick="switchReporteTab('ventas', this)"
+          >
+            📊 Reporte de Ventas
+          </button>
+          <button
+            class="tab-btn"
+            data-tab-rep="compras"
+            onclick="switchReporteTab('compras', this)"
+          >
+            🛒 Reporte de Compras
+          </button>
+          <button
+            class="tab-btn"
+            data-tab-rep="ganancias"
+            onclick="switchReporteTab('ganancias', this)"
+          >
+            💰 Reporte de Ganancias
+          </button>
+        </div>
+
+        <div id="seccion-reporte-ventas">
+          <div class="report-filter table-card">
+            <h2 class="section-title">📅 Filtrar por Rango de Fechas</h2>
+            <div class="filter-row">
+              <div class="filter-field">
+                <label>FECHA DESDE</label>
+                <input type="date" id="fecha-desde" value="2025-03-01" />
+              </div>
+              <div class="filter-field">
+                <label>FECHA HASTA</label>
+                <input type="date" id="fecha-hasta" value="2025-03-31" />
+              </div>
+              <button class="btn-primary" onclick="generarReporte()">
+                📊 Generar Reporte
+              </button>
+            </div>
+          </div>
+
+          <div class="charts-grid">
+            <div class="table-card chart-card">
+              <h3 class="section-title">Ventas por Producto</h3>
+              <div class="chart-container" id="chart-productos"></div>
+            </div>
+            <div class="table-card chart-card">
+              <h3 class="section-title">Ventas por Categoría</h3>
+              <div class="chart-container" id="chart-categorias"></div>
+            </div>
+          </div>
+
+          <div class="table-card mt-24">
+            <h2 class="section-title">🧾 Detalle de Ventas</h2>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>FACTURA</th>
+                  <th>PRODUCTO</th>
+                  <th>CANTIDAD</th>
+                  <th>PRECIO UNIT.</th>
+                  <th>TOTAL</th>
+                </tr>
+              </thead>
+              <tbody id="reporte-detalle-table"></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- /seccion-reporte-ventas -->
+
+        <!-- ===== SECCIÓN: REPORTE DE COMPRAS ===== -->
+        <div id="seccion-reporte-compras" style="display: none">
+          <div class="report-filter table-card mt-16">
+            <h2 class="section-title">🛒 Filtrar Compras por Fecha</h2>
+            <div class="filter-row">
+              <div class="filter-field">
+                <label>FECHA DESDE</label>
+                <input type="date" id="compras-desde" />
+              </div>
+              <div class="filter-field">
+                <label>FECHA HASTA</label>
+                <input type="date" id="compras-hasta" />
+              </div>
+              <button class="btn-primary" onclick="generarReporteCompras()">
+                🛒 Generar
+              </button>
+              <button
+                class="btn-export-excel"
+                onclick="exportarExcel('compras')"
+              >
+                📥 Excel
+              </button>
+              <button class="btn-export-pdf" onclick="exportarPDF('compras')">
+                📄 PDF
+              </button>
+            </div>
+          </div>
+          <div class="table-card mt-16">
+            <h2 class="section-title">
+              🛒 Historial de Compras / Productos Ingresados
+            </h2>
+            <div style="overflow-x: auto">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>FECHA</th>
+                    <th>PRODUCTO</th>
+                    <th>CATEGORÍA</th>
+                    <th>CANTIDAD TOTAL</th>
+                    <th>PAQ. COMPRADOS</th>
+                    <th>UDS SUELTAS</th>
+                    <th>UDS/PAQ</th>
+                    <th>💵 P.COMPRA PAQ</th>
+                    <th>💵 P.COMPRA UNI</th>
+                    <th>💰 TOTAL PAGADO</th>
+                    <th>P.VENTA PAQ</th>
+                    <th>P.VENTA UNI</th>
+                    <th>PROVEEDOR</th>
+                    <th>REGISTRADO POR</th>
+                    <th>STOCK ACTUAL</th>
+                  </tr>
+                </thead>
+                <tbody id="reporte-compras-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <!-- /seccion-reporte-compras -->
+
+        <!-- ===== SECCIÓN: REPORTE DE GANANCIAS ===== -->
+        <div id="seccion-reporte-ganancias" style="display: none">
+          <div class="report-filter table-card mt-16">
+            <h2 class="section-title">💰 Reportes de Ganancias</h2>
+            <div class="filter-row">
+              <div class="filter-field">
+                <label>TIPO DE REPORTE</label>
+                <select id="tipo-reporte-ganancia" onchange="cambiarTipoReporteGanancia()">
+                  <option value="diario">Diario</option>
+                  <option value="semanal">Semanal</option>
+                  <option value="mensual">Mensual</option>
+                </select>
+              </div>
+              <div class="filter-field" id="ganancia-fecha-unica" style="display:block;">
+                <label>FECHA</label>
+                <input type="date" id="ganancia-fecha" />
+              </div>
+              <div class="filter-field" id="ganancia-rango-inicio" style="display:none;">
+                <label>FECHA DESDE</label>
+                <input type="date" id="ganancia-fecha-inicio" />
+              </div>
+              <div class="filter-field" id="ganancia-rango-fin" style="display:none;">
+                <label>FECHA HASTA</label>
+                <input type="date" id="ganancia-fecha-fin" />
+              </div>
+              <div class="filter-field" id="ganancia-mes-field" style="display:none;">
+                <label>MES</label>
+                <select id="ganancia-mes">
+                  <option value="1">Enero</option>
+                  <option value="2">Febrero</option>
+                  <option value="3">Marzo</option>
+                  <option value="4">Abril</option>
+                  <option value="5">Mayo</option>
+                  <option value="6">Junio</option>
+                  <option value="7">Julio</option>
+                  <option value="8">Agosto</option>
+                  <option value="9">Septiembre</option>
+                  <option value="10">Octubre</option>
+                  <option value="11">Noviembre</option>
+                  <option value="12">Diciembre</option>
+                </select>
+              </div>
+              <div class="filter-field" id="ganancia-anio-field" style="display:none;">
+                <label>AÑO</label>
+                <input type="number" id="ganancia-anio" value="2025" min="2020" max="2030" />
+              </div>
+              <button class="btn-primary" onclick="generarReporteGanancias()">
+                💰 Generar Reporte
+              </button>
+            </div>
+          </div>
+
+          <!-- Resumen de Ganancias -->
+          <div class="table-card mt-16" id="ganancia-resumen-card">
+            <h2 class="section-title">📊 Resumen Financiero</h2>
+            <div class="caja-resumen-grid" style="padding:0 20px 20px">
+              <div class="caja-metric highlight">
+                <span class="caja-metric-label">💵 Total Ventas</span>
+                <span class="caja-metric-value" id="ganancia-total-ventas">$0.00</span>
+              </div>
+              <div class="caja-metric" style="border-left: 4px solid var(--danger);">
+                <span class="caja-metric-label">🛒 Total Compras (Gastos)</span>
+                <span class="caja-metric-value" style="color:var(--danger)" id="ganancia-total-compras">$0.00</span>
+              </div>
+              <div class="caja-metric highlight" style="border-left: 4px solid var(--accent);">
+                <span class="caja-metric-label">💰 Ganancia Neta</span>
+                <span class="caja-metric-value" style="color:var(--accent); font-size:2rem" id="ganancia-neta">$0.00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Historial Detallado -->
+          <div class="table-card mt-16">
+            <h2 class="section-title">📋 Historial de Ingresos y Gastos</h2>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>FECHA</th>
+                  <th>TIPO</th>
+                  <th>DESCRIPCIÓN</th>
+                  <th>MONTO</th>
+                </tr>
+              </thead>
+              <tbody id="ganancia-historial-table">
+                <tr class="empty-row"><td colspan="4">Selecciona un período para ver el detalle</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- /seccion-reporte-ganancias -->
+
+        <!-- Exportaciones -->
+        <div class="table-card mt-24">
+          <h2 class="section-title">📤 Exportar Reportes</h2>
+          <div style="padding: 20px">
+            <div class="export-section-grid">
+              <div class="export-group">
+                <h4 class="export-group-title">📊 Excel</h4>
+                <div class="export-btn-row">
+                  <button
+                    class="btn-export-excel"
+                    onclick="exportarExcel('ventas')"
+                  >
+                    🧾 Ventas
+                  </button>
+                  <button
+                    class="btn-export-excel"
+                    onclick="exportarExcel('inventario')"
+                  >
+                    🏭 Inventario
+                  </button>
+                  <button
+                    class="btn-export-excel"
+                    onclick="exportarExcel('clientes')"
+                  >
+                    👥 Clientes
+                  </button>
+                  <button
+                    class="btn-export-excel"
+                    onclick="exportarExcel('empleados')"
+                  >
+                    👔 Empleados
+                  </button>
+                  <button
+                    class="btn-export-excel"
+                    onclick="exportarExcel('proveedores')"
+                  >
+                    🚚 Proveedores
+                  </button>
+                  <button
+                    class="btn-export-excel"
+                    onclick="exportarExcel('productos')"
+                  >
+                    📦 Productos
+                  </button>
+                  <button
+                    class="btn-export-excel"
+                    onclick="exportarExcel('compras')"
+                  >
+                    🛒 Compras
+                  </button>
+                </div>
+              </div>
+              <div class="export-group">
+                <h4 class="export-group-title">📄 PDF</h4>
+                <div class="export-btn-row">
+                  <button
+                    class="btn-export-pdf"
+                    onclick="exportarPDF('ventas')"
+                  >
+                    🧾 Ventas PDF
+                  </button>
+                  <button
+                    class="btn-export-pdf"
+                    onclick="exportarPDF('inventario')"
+                  >
+                    🏭 Inventario PDF
+                  </button>
+                  <button
+                    class="btn-export-pdf"
+                    onclick="exportarPDF('movimientos')"
+                  >
+                    💵 Movimientos PDF
+                  </button>
+                  <button
+                    class="btn-export-pdf"
+                    onclick="exportarPDF('compras')"
+                  >
+                    🛒 Compras PDF
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== PAGE: DEFECTUOSOS ===== -->
+      <section id="page-defectuosos" class="page">
+        <div class="page-header">
+          <div>
+            <h1>Productos Defectuosos</h1>
+            <p class="breadcrumb">Inicio / Defectuosos</p>
+          </div>
+          <button class="btn-primary" onclick="openModal('modal-defectuoso')">
+            + Reportar Defectuoso
+          </button>
+        </div>
+        <div class="table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>PRODUCTO</th>
+                <th>INVENTARIO</th>
+                <th>CANTIDAD</th>
+                <th>FECHA</th>
+                <th>DESCRIPCIÓN</th>
+                <th>ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody id="defectuosos-table"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- ============================================================
+     MODALES
+     ============================================================ -->
+
+    <!-- Modal: Producto -->
+    <div class="modal-overlay" id="modal-producto">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="modal-producto-title">➕ Nuevo Producto</h2>
+          <button class="modal-close" onclick="closeModal('modal-producto')">
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="prod-id" />
+          <div class="form-grid">
+            <!-- 1. Nombre -->
+            <div class="form-group full-width">
+              <label>Nombre del Producto</label>
+              <input
+                type="text"
+                id="prod-nombre"
+                placeholder="Ej: Papel Higiénico Nevax"
+              />
+            </div>
+            <!-- 2. Descripción -->
+            <div class="form-group full-width">
+              <label>Descripción</label>
+              <input
+                type="text"
+                id="prod-desc"
+                placeholder="Descripción breve"
+              />
+            </div>
+            <!-- 3. Cantidad paquetes (solo al crear) -->
+            <div class="form-group" id="prod-cantidad-paquetes-group">
+              <label>📦 Cantidad de Paquetes a Ingresar</label>
+              <input
+                type="number"
+                id="prod-cantidad-paquetes"
+                min="0"
+                step="1"
+                placeholder="0"
+                oninput="calcularTotalPagar()"
+              />
+            </div>
+            <!-- 4. Unidades por paquete -->
+            <div class="form-group">
+              <label>📋 Unidades por Paquete</label>
+              <input
+                type="number"
+                id="prod-unidades-paquete"
+                min="1"
+                step="1"
+                placeholder="1"
+                value="1"
+              />
+            </div>
+            <!-- 5. Precio compra proveedor (por paquete) -->
+            <div class="form-group">
+              <label>💲 Precio Compra por Paquete</label>
+              <input
+                type="number"
+                id="prod-precio-compra-paq"
+                step="0.01"
+                placeholder="0.00"
+                oninput="calcularTotalPagar()"
+              />
+            </div>
+            <!-- NUEVO: Total a Pagar -->
+            <div class="form-group">
+              <label>� Total a Pagar al Proveedor</label>
+              <input
+                type="number"
+                id="prod-total-pagar"
+                step="0.01"
+                placeholder="0.00"
+                readonly
+                style="background: #e8f5e9; font-weight: bold; font-size: 1.1rem; color: #2e7d32;"
+              />
+            </div>
+            <!-- 6. Precio venta paquete -->
+            <div class="form-group">
+              <label>🏷️ Precio Venta por Paquete</label>
+              <input
+                type="number"
+                id="prod-precio-venta-paq"
+                step="0.01"
+                placeholder="0.00"
+              />
+            </div>
+            <!-- 7. Precio venta unidad -->
+            <div class="form-group">
+              <label>🏷️ Precio Venta por Unidad</label>
+              <input
+                type="number"
+                id="prod-precio-unit"
+                step="0.01"
+                placeholder="0.00"
+              />
+            </div>
+            <!-- 8. Categoría -->
+            <div class="form-group">
+              <label>Categoría</label>
+              <select id="prod-categoria">
+                <option value="">Seleccionar...</option>
+              </select>
+            </div>
+            <!-- 9. Proveedor solo activos -->
+            <div class="form-group">
+              <label>Proveedor</label>
+              <select id="prod-proveedor">
+                <option value="">Seleccionar...</option>
+              </select>
+            </div>
+            <!-- 10. Empleado solo activos -->
+            <div class="form-group">
+              <label>Empleado que Registra</label>
+              <select id="prod-empleado">
+                <option value="">Seleccionar...</option>
+              </select>
+            </div>
+            <!-- 11. Fecha de ingreso -->
+            <div class="form-group">
+              <label>Fecha de Ingreso</label>
+              <input type="date" id="prod-fecha-ingreso" />
+            </div>
+            <!-- Campo oculto BD -->
+            <div class="form-group" style="display: none">
+              <label>Precio Mayorista</label>
+              <input
+                type="number"
+                id="prod-precio-may"
+                step="0.01"
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="closeModal('modal-producto')">
+            Cancelar
+          </button>
+          <button class="btn-primary" onclick="saveProducto()">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Cliente -->
+    <div class="modal-overlay" id="modal-cliente">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="modal-cliente-title">➕ Nuevo Cliente</h2>
+          <button class="modal-close" onclick="closeModal('modal-cliente')">
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="cli-id" />
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nombre</label>
+              <input type="text" id="cli-nombre" placeholder="Nombre" />
+            </div>
+            <div class="form-group">
+              <label>Apellido</label>
+              <input type="text" id="cli-apellido" placeholder="Apellido" />
+            </div>
+            <div class="form-group">
+              <label>Dirección</label>
+              <input
+                type="text"
+                id="cli-dir"
+                placeholder="Dirección completa"
+              />
+            </div>
+            <div class="form-group">
+              <label>Teléfono</label>
+              <input type="text" id="cli-tel" placeholder="09XXXXXXXX" />
+            </div>
+            <div class="form-group full-width">
+              <label>Email</label>
+              <input
+                type="email"
+                id="cli-email"
+                placeholder="correo@ejemplo.com"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="closeModal('modal-cliente')">
+            Cancelar
+          </button>
+          <button class="btn-primary" onclick="saveCliente()">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Empleado -->
+    <div class="modal-overlay" id="modal-empleado">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="modal-empleado-title">➕ Nuevo Empleado</h2>
+          <button class="modal-close" onclick="closeModal('modal-empleado')">
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="emp-id" />
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nombre</label>
+              <input type="text" id="emp-nombre" placeholder="Nombre" />
+            </div>
+            <div class="form-group">
+              <label>Apellido</label>
+              <input type="text" id="emp-apellido" placeholder="Apellido" />
+            </div>
+            <div class="form-group">
+              <label>Correo</label>
+              <input
+                type="email"
+                id="emp-correo"
+                placeholder="correo@empresa.ec"
+              />
+            </div>
+            <div class="form-group">
+              <label>Ruta</label>
+              <input
+                type="text"
+                id="emp-ruta"
+                placeholder="Ej: Ruta Norte Quito"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="closeModal('modal-empleado')">
+            Cancelar
+          </button>
+          <button class="btn-primary" onclick="saveEmpleado()">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Proveedor -->
+    <div class="modal-overlay" id="modal-proveedor">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="modal-proveedor-title">➕ Nuevo Proveedor</h2>
+          <button class="modal-close" onclick="closeModal('modal-proveedor')">
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="prov-id" />
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nombre</label>
+              <input
+                type="text"
+                id="prov-nombre"
+                placeholder="Nombre empresa"
+              />
+            </div>
+            <div class="form-group">
+              <label>Dirección</label>
+              <input type="text" id="prov-dir" placeholder="Dirección" />
+            </div>
+            <div class="form-group">
+              <label>Teléfono</label>
+              <input type="text" id="prov-tel" placeholder="09XXXXXXXX" />
+            </div>
+            <div class="form-group">
+              <label>Correo</label>
+              <input
+                type="email"
+                id="prov-correo"
+                placeholder="correo@empresa.com"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="closeModal('modal-proveedor')">
+            Cancelar
+          </button>
+          <button class="btn-primary" onclick="saveProveedor()">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Venta -->
+    <div class="modal-overlay" id="modal-venta">
+      <div class="modal modal-wide">
+        <div class="modal-header">
+          <h2>🧾 Nueva Venta</h2>
+          <button class="modal-close" onclick="closeModal('modal-venta')">
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Cliente</label>
+              <select id="venta-cliente">
+                <option value="">Seleccionar...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Empleado</label>
+              <select id="venta-empleado">
+                <option value="">Seleccionar...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Fecha</label>
+              <input type="date" id="venta-fecha" />
+            </div>
+          </div>
+
+          <div class="mt-16">
+            <h3
+              style="
+                color: var(--text-secondary);
+                margin-bottom: 10px;
+                font-size: 0.9rem;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+              "
+            >
+              Productos de la Venta
+            </h3>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: 1fr 130px 80px 90px auto;
+                gap: 8px;
+                margin-bottom: 6px;
+                padding: 0 2px;
+              "
+            >
+              <span
+                style="
+                  font-size: 0.7rem;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                  font-weight: 600;
+                "
+                >Producto</span
+              >
+              <span
+                style="
+                  font-size: 0.7rem;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                  font-weight: 600;
+                "
+                >Tipo</span
+              >
+              <span
+                style="
+                  font-size: 0.7rem;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                  font-weight: 600;
+                "
+                >Cant.</span
+              >
+              <span
+                style="
+                  font-size: 0.7rem;
+                  color: var(--text-muted);
+                  text-transform: uppercase;
+                  font-weight: 600;
+                "
+                >Precio</span
+              >
+              <span></span>
+            </div>
+            <div id="venta-items"></div>
+            <button class="btn-outline mt-12" onclick="addVentaItem()">
+              + Agregar Producto
+            </button>
+          </div>
+
+          <div class="venta-total-box mt-16">
+            <span>TOTAL:</span>
+            <span class="venta-total-val" id="venta-total-display">$0.00</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="closeModal('modal-venta')">
+            Cancelar
+          </button>
+          <button class="btn-primary" onclick="saveVenta()">
+            Registrar Venta
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Inventario (Registrar Compra) -->
+    <div class="modal-overlay" id="modal-inventario">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="modal-inventario-title">➕ Registrar Compra / Ingreso Stock</h2>
+          <button class="modal-close" onclick="closeModal('modal-inventario')">
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="inv-id" />
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label>Producto</label>
+              <select id="inv-producto" onchange="onInventarioProductoChange(this.value)">
+                <option value="">Seleccionar...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Proveedor</label>
+              <select id="inv-proveedor">
+                <option value="">Seleccionar...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Empleado Responsable</label>
+              <select id="inv-empleado">
+                <option value="">Seleccionar...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Paquetes</label>
+              <input
+                type="number"
+                id="inv-paquetes"
+                min="0"
+                step="1"
+                placeholder="0"
+                value="0"
+                oninput="recalcInventarioTotal()"
+              />
+            </div>
+            <div class="form-group">
+              <label>Unidades Sueltas</label>
+              <input
+                type="number"
+                id="inv-unidades-sueltas"
+                min="0"
+                step="1"
+                placeholder="0"
+                value="0"
+                oninput="recalcInventarioTotal()"
+              />
+            </div>
+            <div class="form-group">
+              <label>📊 Total de Unidades</label>
+              <input
+                type="number"
+                id="inv-total-unidades"
+                placeholder="0"
+                readonly
+                style="background: var(--bg-elevated); cursor: not-allowed;"
+              />
+            </div>
+            <div class="form-group">
+              <label>💲 Precio Compra por Paquete (C$)</label>
+              <input
+                type="number"
+                id="inv-precio-compra-paq"
+                step="0.01"
+                placeholder="0.00"
+                oninput="recalcInventarioPrecios('paq')"
+              />
+            </div>
+            <div class="form-group">
+              <label>💲 Precio Compra por Unidad (C$)</label>
+              <input
+                type="number"
+                id="inv-precio-compra-unit"
+                step="0.01"
+                placeholder="0.00"
+                oninput="recalcInventarioPrecios('uni')"
+              />
+            </div>
+            <div class="form-group">
+              <label>💰 Precio Total de Compra (C$)</label>
+              <input
+                type="number"
+                id="inv-precio-total"
+                step="0.01"
+                placeholder="0.00"
+                oninput="recalcInventarioPrecios('total')"
+              />
+            </div>
+            <div class="form-group">
+              <label>Fecha</label>
+              <input type="date" id="inv-fecha" />
+            </div>
+            <div class="form-group">
+              <label>Estado</label>
+              <select id="inv-estado">
+                <option value="Disponible">Disponible</option>
+                <option value="Agotado">Agotado</option>
+                <option value="En revisión">En revisión</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn-secondary"
+            onclick="closeModal('modal-inventario')"
+          >
+            Cancelar
+          </button>
+          <button class="btn-primary" onclick="saveInventario()">
+            Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Defectuosos -->
+    <div class="modal-overlay" id="modal-defectuoso">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="modal-defectuoso-title">➕ Reportar Defectuoso</h2>
+          <button class="modal-close" onclick="closeModal('modal-defectuoso')">
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="def-id" />
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Producto</label>
+              <select id="def-producto">
+                <option value="">Seleccionar...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Inventario (ID)</label>
+              <input
+                type="number"
+                id="def-inv-id"
+                placeholder="ID de inventario relacionado"
+              />
+            </div>
+            <div class="form-group">
+              <label>Cantidad</label>
+              <input
+                type="number"
+                id="def-cantidad"
+                min="1"
+                placeholder="Cantidad defectuosa"
+              />
+            </div>
+            <div class="form-group">
+              <label>Fecha</label>
+              <input type="date" id="def-fecha" />
+            </div>
+            <div class="form-group full-width">
+              <label>Descripción del Defecto</label>
+              <input
+                type="text"
+                id="def-desc"
+                placeholder="Detalles del problema..."
+              />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn-secondary"
+            onclick="closeModal('modal-defectuoso')"
+          >
+            Cancelar
+          </button>
+          <button class="btn-primary" onclick="saveDefectuoso()">
+            Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Apertura de Caja -->
+    <div class="modal-overlay" id="modal-caja-apertura">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>💵 Abrir Caja del Día</h2>
+          <button
+            class="modal-close"
+            onclick="closeModal('modal-caja-apertura')"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label>Empleado Responsable</label>
+              <select id="caja-apertura-empleado">
+                <option value="">Seleccionar...</option>
+              </select>
+            </div>
+            <div class="form-group full-width">
+              <label>Monto Inicial ($)</label>
+              <input
+                type="number"
+                id="caja-apertura-monto"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn-secondary"
+            onclick="closeModal('modal-caja-apertura')"
+          >
+            Cancelar
+          </button>
+          <button class="btn-primary" onclick="abrirCaja()">
+            🟢 Abrir Caja
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Cierre de Caja -->
+    <div class="modal-overlay" id="modal-caja-cierre">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>🔴 Cerrar Caja del Día</h2>
+          <button class="modal-close" onclick="closeModal('modal-caja-cierre')">
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <p
+            style="
+              color: var(--text-secondary);
+              margin-bottom: 16px;
+              font-size: 0.9rem;
+            "
+          >
+            Ingresa el monto físico contado en caja al momento del cierre.
+          </p>
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label>Monto Final Contado ($)</label>
+              <input
+                type="number"
+                id="caja-cierre-monto"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn-secondary"
+            onclick="closeModal('modal-caja-cierre')"
+          >
+            Cancelar
+          </button>
+          <button
+            class="btn-primary"
+            style="background: var(--danger); color: #fff"
+            onclick="cerrarCaja()"
+          >
+            🔴 Cerrar Caja
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Movimiento de Caja -->
+    <div class="modal-overlay" id="modal-caja-movimiento">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="modal-caja-mov-title">💵 Registrar Movimiento</h2>
+          <button
+            class="modal-close"
+            onclick="closeModal('modal-caja-movimiento')"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="caja-mov-tipo" />
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label>Descripción</label>
+              <input
+                type="text"
+                id="caja-mov-desc"
+                placeholder="Motivo del movimiento..."
+              />
+            </div>
+            <div class="form-group full-width">
+              <label>Monto ($)</label>
+              <input
+                type="number"
+                id="caja-mov-monto"
+                step="0.01"
+                min="0.01"
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn-secondary"
+            onclick="closeModal('modal-caja-movimiento')"
+          >
+            Cancelar
+          </button>
+          <button class="btn-primary" onclick="agregarMovimientoCaja()">
+            Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Detalle de Factura -->
+    <div class="modal-overlay" id="modal-factura">
+      <div class="modal modal-wide" style="max-width: 800px">
+        <div
+          class="modal-header"
+          style="border-bottom: 2px dashed var(--border); padding-bottom: 15px"
+        >
+          <h2>🧾 FACTURA DE VENTA</h2>
+          <button class="modal-close" onclick="closeModal('modal-factura')">
+            ✕
+          </button>
+        </div>
+        <div
+          class="modal-body"
+          style="
+            background-color: #fafafa;
+            padding: 30px;
+            font-family: &quot;Space Grotesk&quot;, sans-serif;
+          "
+        >
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 30px;
+            "
+          >
+            <div>
+              <h3 style="margin: 0; color: #0f5c42; font-size: 1.5rem">
+                COMERCIALIZADORA ROSALES
+              </h3>
+              <p style="margin: 5px 0; color: #666; font-size: 0.9rem">
+                RUC: 1790000000001
+              </p>
+              <p style="margin: 5px 0; color: #666; font-size: 0.9rem">
+                Teléfono: (02) 200-0000
+              </p>
+            </div>
+            <div style="text-align: right">
+              <h1
+                style="margin: 0; font-size: 2rem; color: #333"
+                id="factura-numero"
+              >
+                FACTURA #000
+              </h1>
+              <p style="margin: 5px 0; font-weight: 500" id="factura-fecha">
+                Fecha: --
+              </p>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 20px; margin-bottom: 30px">
+            <div
+              style="
+                flex: 1;
+                background: white;
+                padding: 15px;
+                border-radius: 8px;
+                border: 1px solid #eee;
+              "
+            >
+              <h4
+                style="
+                  margin-top: 0;
+                  color: #888;
+                  border-bottom: 1px solid #eee;
+                  padding-bottom: 5px;
+                "
+              >
+                CLIENTE
+              </h4>
+              <p
+                style="margin: 5px 0; font-weight: bold; font-size: 1.1rem"
+                id="factura-cliente-nombre"
+              >
+                --
+              </p>
+              <p style="margin: 5px 0" id="factura-cliente-email">--</p>
+              <p style="margin: 5px 0" id="factura-cliente-tel">--</p>
+              <p style="margin: 5px 0" id="factura-cliente-dir">--</p>
+            </div>
+            <div
+              style="
+                flex: 1;
+                background: white;
+                padding: 15px;
+                border-radius: 8px;
+                border: 1px solid #eee;
+              "
+            >
+              <h4
+                style="
+                  margin-top: 0;
+                  color: #888;
+                  border-bottom: 1px solid #eee;
+                  padding-bottom: 5px;
+                "
+              >
+                VENDEDOR
+              </h4>
+              <p
+                style="margin: 5px 0; font-weight: bold; font-size: 1.1rem"
+                id="factura-vendedor-nombre"
+              >
+                --
+              </p>
+              <p style="margin: 5px 0" id="factura-vendedor-ruta">--</p>
+            </div>
+          </div>
+
+          <table class="data-table" style="background: white; width: 100%">
+            <thead style="background: #0f5c42; color: white">
+              <tr>
+                <th>CANTIDAD</th>
+                <th>PRODUCTO</th>
+                <th>CATEGORÍA</th>
+                <th>PRECIO UNIT.</th>
+                <th>SUBTOTAL</th>
+              </tr>
+            </thead>
+            <tbody id="factura-items-table"></tbody>
+          </table>
+
+          <div
+            style="display: flex; justify-content: flex-end; margin-top: 20px"
+          >
+            <div
+              style="
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                border: 2px solid #0f5c42;
+                min-width: 250px;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  font-size: 1.1rem;
+                  margin-bottom: 10px;
+                "
+              >
+                <span>Subtotal:</span><span id="factura-subtotal">$0.00</span>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  font-size: 1.1rem;
+                  margin-bottom: 10px;
+                "
+              >
+                <span>IVA (15%):</span><span id="factura-iva">$0.00</span>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  font-size: 1.5rem;
+                  font-weight: bold;
+                  color: #0f5c42;
+                  border-top: 2px solid #eee;
+                  padding-top: 10px;
+                "
+              >
+                <span>TOTAL:</span><span id="factura-total">$0.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-primary" onclick="window.print()">
+            🖨️ Imprimir
+          </button>
+          <button class="btn-secondary" onclick="closeModal('modal-factura')">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script src="app.js"></script>
+    <script>
+      // Ocultar loader una vez que la página esté lista
+      window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+          const loader = document.getElementById('app-loader');
+          if (loader) {
+            loader.style.opacity = '0';
+            loader.style.transition = 'opacity 0.3s';
+            setTimeout(() => loader.remove(), 300);
+          }
+        }, 1000); // Esperar 1 segundo mínimo para que se vean los datos cargados
+      });
+    </script>
+  </body>
+</html>

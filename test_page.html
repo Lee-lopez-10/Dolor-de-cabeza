@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Conexión BD</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 { color: #333; }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .loading { color: #ffc107; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: #0056b3; }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test de Conexión a Base de Datos</h1>
+    
+    <div class="card">
+        <h2>Estado del Servidor</h2>
+        <p id="status" class="loading">⏳ Probando conexión...</p>
+    </div>
+
+    <div class="card">
+        <h2>Datos de Prueba</h2>
+        <button onclick="testAPI()">🔄 Probar API</button>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE = "http://localhost:8080/api";
+
+        async function checkServer() {
+            try {
+                const response = await fetch(`${API_BASE}/productos`);
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('status').innerHTML = 
+                        `<span class="success">✅ Servidor conectado correctamente</span><br>
+                         <small>Se encontraron ${data.length} productos en la base de datos</small>`;
+                } else {
+                    document.getElementById('status').innerHTML = 
+                        `<span class="error">❌ Error: ${response.status}</span>`;
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML = 
+                    `<span class="error">❌ No se puede conectar al servidor</span><br>
+                     <small>${error.message}</small>`;
+            }
+        }
+
+        async function testAPI() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p class="loading">⏳ Cargando datos...</p>';
+
+            try {
+                // Probar múltiples endpoints
+                const tests = [
+                    { name: 'Productos', endpoint: '/productos' },
+                    { name: 'Categorías', endpoint: '/categorias' },
+                    { name: 'Clientes', endpoint: '/clientes' },
+                    { name: 'Dashboard', endpoint: '/dashboard' }
+                ];
+
+                let html = '<h3>Resultados:</h3>';
+                
+                for (const test of tests) {
+                    const response = await fetch(`${API_BASE}${test.endpoint}`);
+                    const data = await response.json();
+                    
+                    html += `<div style="margin: 10px 0;">
+                        <strong>${test.name}:</strong> 
+                        <span class="success">✅ OK</span>
+                        ${Array.isArray(data) ? ` (${data.length} registros)` : ''}
+                    </div>`;
+                }
+
+                // Mostrar un producto de ejemplo
+                const productos = await fetch(`${API_BASE}/productos`).then(r => r.json());
+                if (productos.length > 0) {
+                    html += '<h3>Ejemplo de Producto:</h3>';
+                    html += `<pre>${JSON.stringify(productos[0], null, 2)}</pre>`;
+                }
+
+                resultsDiv.innerHTML = html;
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        // Verificar al cargar
+        window.addEventListener('DOMContentLoaded', checkServer);
+    </script>
+</body>
+</html>
