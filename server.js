@@ -10,7 +10,7 @@ const ExcelJS = require("exceljs");
 const { getPool, sql } = require("./db");
 
 const app = express();
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 
 app.use(cors());
 app.use(express.json());
@@ -21,11 +21,15 @@ app.use(express.static(path.join(__dirname, ".")));
    ============================================================ */
 async function query(q, params = []) {
   const pool = await getPool();
-  const request = pool.request();
-  params.forEach(({ name, type, value }) => request.input(name, type, value));
-  return request.query(q);
+  let sql = q;
+  const values = [];
+  params.forEach(({ name, value }) => {
+    sql = sql.replace(new RegExp(`@${name}`, "g"), "?");
+    values.push(value);
+  });
+  const [rows] = await pool.execute(sql, values);
+  return { recordset: rows };
 }
-
 /* ============================================================
    CATEGORÍAS
    Tabla: CATEGORIA | PK: id_categoria
@@ -279,7 +283,7 @@ app.post("/api/productos", async (req, res) => {
     const pCompraPaq = parseFloat(precio_compra_paq) || 0;
     let pCompraUni = parseFloat(precio_compra_uni);
     if (isNaN(pCompraUni) || pCompraUni === null) {
-      pCompraUni = uPaq > 0 ? (pCompraPaq / uPaq) : 0;
+      pCompraUni = uPaq > 0 ? pCompraPaq / uPaq : 0;
     }
 
     const r = await query(
@@ -359,12 +363,25 @@ app.post("/api/productos", async (req, res) => {
             { name: "pcuni", type: sql.Decimal, value: pCompraUni },
             { name: "ptotal", type: sql.Decimal, value: precioTotalCompra },
             { name: "iprov", type: sql.Int, value: parseInt(id_prov) },
-            { name: "iemp", type: sql.Int, value: id_empleado_registro ? parseInt(id_empleado_registro) : null },
-            { name: "fecha", type: sql.DateTime, value: fecha_ingreso ? new Date(fecha_ingreso) : new Date() }
-          ]
+            {
+              name: "iemp",
+              type: sql.Int,
+              value: id_empleado_registro
+                ? parseInt(id_empleado_registro)
+                : null,
+            },
+            {
+              name: "fecha",
+              type: sql.DateTime,
+              value: fecha_ingreso ? new Date(fecha_ingreso) : new Date(),
+            },
+          ],
         );
       } catch (compraError) {
-        console.error("❌ Error registrando compra inicial:", compraError.message);
+        console.error(
+          "❌ Error registrando compra inicial:",
+          compraError.message,
+        );
       }
     }
 
@@ -396,7 +413,7 @@ app.put("/api/productos/:id", async (req, res) => {
     const pCompraPaq = parseFloat(precio_compra_paq) || 0;
     let pCompraUni = parseFloat(precio_compra_uni);
     if (isNaN(pCompraUni) || pCompraUni === null) {
-      pCompraUni = uPaq > 0 ? (pCompraPaq / uPaq) : 0;
+      pCompraUni = uPaq > 0 ? pCompraPaq / uPaq : 0;
     }
 
     const r = await query(
@@ -709,31 +726,33 @@ app.post("/api/inventario", async (req, res) => {
       precio_total = 0,
       id_proveedor = null,
       id_empleado = null,
-      fecha = null
+      fecha = null,
     } = req.body;
-    
+
     // Obtener datos del producto
     const prodResult = await query(
       `SELECT Nombre, id_proveedor, Unidades_por_paquete FROM PRODUCTO WHERE id_producto = @id`,
-      [{ name: "id", type: sql.Int, value: parseInt(id_producto) }]
+      [{ name: "id", type: sql.Int, value: parseInt(id_producto) }],
     );
-    
+
     if (!prodResult.recordset.length) {
       return res.status(404).json({ error: "Producto no encontrado" });
     }
-    
+
     const prodData = prodResult.recordset[0];
     const unidadesPorPaquete = prodData.Unidades_por_paquete || 1;
     const paq = parseInt(paquetes) || 0;
     const sueltas = parseInt(unidades_sueltas) || 0;
-    const cantidadTotal = (paq * unidadesPorPaquete) + sueltas;
-    
+    const cantidadTotal = paq * unidadesPorPaquete + sueltas;
+
     if (cantidadTotal <= 0) {
-      return res.status(400).json({ error: "Debe ingresar al menos 1 unidad o paquete" });
+      return res
+        .status(400)
+        .json({ error: "Debe ingresar al menos 1 unidad o paquete" });
     }
-    
+
     const fechaMov = fecha ? new Date(fecha) : new Date();
-    
+
     // Crear nuevo registro de inventario
     const r = await query(
       `INSERT INTO INVENTARIO (id_producto, Cantidad, Paquetes, Unidades_sueltas, Estado, Fecha_movimiento)
@@ -750,15 +769,19 @@ app.post("/api/inventario", async (req, res) => {
         { name: "cant", type: sql.Int, value: cantidadTotal },
         { name: "paq", type: sql.Int, value: paq },
         { name: "sueltas", type: sql.Int, value: sueltas },
-        { name: "fecha", type: sql.Date, value: fechaMov }
-      ]
+        { name: "fecha", type: sql.Date, value: fechaMov },
+      ],
     );
-    
+
     const pTotal = parseFloat(precio_total) || 0;
     const pPaq = parseFloat(precio_compra_paq) || 0;
-    const pUni = parseFloat(precio_compra_uni) || (unidadesPorPaquete > 0 ? pPaq / unidadesPorPaquete : 0);
-    const provId = id_proveedor ? parseInt(id_proveedor) : prodData.id_proveedor;
-    
+    const pUni =
+      parseFloat(precio_compra_uni) ||
+      (unidadesPorPaquete > 0 ? pPaq / unidadesPorPaquete : 0);
+    const provId = id_proveedor
+      ? parseInt(id_proveedor)
+      : prodData.id_proveedor;
+
     // Registrar la compra
     await query(
       `INSERT INTO COMPRA (id_producto, Cantidad, Paquetes, Unidades_sueltas, Precio_compra_paquete, Precio_compra_unidad, Precio_total, id_proveedor, id_empleado, Fecha)
@@ -772,23 +795,27 @@ app.post("/api/inventario", async (req, res) => {
         { name: "pcuni", type: sql.Decimal, value: pUni },
         { name: "ptotal", type: sql.Decimal, value: pTotal },
         { name: "iprov", type: sql.Int, value: parseInt(provId) },
-        { name: "iemp", type: sql.Int, value: id_empleado ? parseInt(id_empleado) : null },
-        { name: "fecha", type: sql.DateTime, value: fechaMov }
-      ]
+        {
+          name: "iemp",
+          type: sql.Int,
+          value: id_empleado ? parseInt(id_empleado) : null,
+        },
+        { name: "fecha", type: sql.DateTime, value: fechaMov },
+      ],
     );
-    
+
     // Si hay caja abierta y se ingresó un costo, registrar movimiento de Egreso
     if (pTotal > 0) {
       try {
         const cajaRow = await query(
-          `SELECT TOP 1 id_caja, total_egresos FROM CAJA WHERE Estado = 'Abierta' ORDER BY fecha_apertura DESC`
+          `SELECT TOP 1 id_caja, total_egresos FROM CAJA WHERE Estado = 'Abierta' ORDER BY fecha_apertura DESC`,
         );
         if (cajaRow.recordset.length > 0) {
           const caja = cajaRow.recordset[0];
           const hoy = new Date();
           const hora = hoy.toTimeString().split(" ")[0];
           const desc = `Compra: ${paq} paq, ${sueltas} uds de ${prodData.Nombre}`;
-          
+
           // Insertar movimiento
           await query(
             `INSERT INTO MOVIMIENTO_CAJA (id_caja, Tipo, Descripcion, Monto, Fecha, Hora)
@@ -798,25 +825,28 @@ app.post("/api/inventario", async (req, res) => {
               { name: "desc", type: sql.NVarChar, value: desc },
               { name: "monto", type: sql.Decimal, value: pTotal },
               { name: "fecha", type: sql.DateTime, value: hoy },
-              { name: "hora", type: sql.NVarChar, value: hora }
-            ]
+              { name: "hora", type: sql.NVarChar, value: hora },
+            ],
           );
-          
+
           // Actualizar total_egresos de caja
           const nuevoEgreso = parseFloat(caja.total_egresos || 0) + pTotal;
           await query(
             `UPDATE CAJA SET total_egresos = @v WHERE id_caja = @idc`,
             [
               { name: "v", type: sql.Decimal, value: nuevoEgreso },
-              { name: "idc", type: sql.Int, value: caja.id_caja }
-            ]
+              { name: "idc", type: sql.Int, value: caja.id_caja },
+            ],
           );
         }
       } catch (cajaErr) {
-        console.warn("⚠️ No se pudo registrar el egreso en caja:", cajaErr.message);
+        console.warn(
+          "⚠️ No se pudo registrar el egreso en caja:",
+          cajaErr.message,
+        );
       }
     }
-    
+
     res.status(201).json(r.recordset[0]);
   } catch (e) {
     console.error("Error en POST /api/inventario:", e);
@@ -958,35 +988,36 @@ app.get("/api/ventas", async (req, res) => {
 app.post("/api/ventas", async (req, res) => {
   try {
     const { id_cli, id_emp, fecha, total } = req.body;
-    
+
     // VERIFICAR QUE HAYA CAJA ABIERTA Y QUE SEA EL RESPONSABLE
     const cajaRow = await query(
       `SELECT TOP 1 id_caja, id_empleado, Estado FROM CAJA WHERE Estado = 'Abierta' ORDER BY fecha_apertura DESC`,
     );
-    
+
     if (cajaRow.recordset.length === 0) {
-      return res.status(403).json({ 
-        error: "No hay caja abierta. Debes abrir la caja antes de realizar ventas." 
+      return res.status(403).json({
+        error:
+          "No hay caja abierta. Debes abrir la caja antes de realizar ventas.",
       });
     }
-    
+
     const caja = cajaRow.recordset[0];
     const idEmpleadoVenta = parseInt(id_emp);
     const idEmpleadoCaja = parseInt(caja.id_empleado);
-    
+
     if (idEmpleadoVenta !== idEmpleadoCaja) {
       // Obtener nombre del responsable
       const empRow = await query(
         `SELECT Nombre + ' ' + Apellido AS nombre FROM EMPLEADO WHERE id_empleado = @id`,
-        [{ name: "id", type: sql.Int, value: idEmpleadoCaja }]
+        [{ name: "id", type: sql.Int, value: idEmpleadoCaja }],
       );
       const nombreResponsable = empRow.recordset[0]?.nombre || "desconocido";
-      
-      return res.status(403).json({ 
-        error: `Acceso denegado. Solo ${nombreResponsable} (quien abrió la caja) puede realizar ventas mientras la caja permanezca abierta.` 
+
+      return res.status(403).json({
+        error: `Acceso denegado. Solo ${nombreResponsable} (quien abrió la caja) puede realizar ventas mientras la caja permanezca abierta.`,
       });
     }
-    
+
     // Proceder con la venta
     const r = await query(
       `INSERT INTO FACTURA_VENTA (id_cliente, id_empleado, Fecha, Total)
@@ -1112,7 +1143,7 @@ app.get("/api/detalles", async (req, res) => {
 app.post("/api/detalles", async (req, res) => {
   try {
     const { id_fac, id_prod, cantidad, precio_unit, total } = req.body;
-    
+
     // 1. Insertar el detalle de venta
     const r = await query(
       `INSERT INTO DETALLE_VENTA (id_factura, id_producto, Cantidad, Precio_unitario, Total)
@@ -1131,55 +1162,56 @@ app.post("/api/detalles", async (req, res) => {
         { name: "total", type: sql.Decimal, value: parseFloat(total) },
       ],
     );
-    
+
     // 2. ACTUALIZAR INVENTARIO - Reducir stock cuando se vende
     const cantidadVendida = parseInt(cantidad);
-    
+
     // Obtener producto para saber unidades por paquete
     const prodResult = await query(
       `SELECT Unidades_por_paquete FROM PRODUCTO WHERE id_producto = @id`,
-      [{ name: "id", type: sql.Int, value: parseInt(id_prod) }]
+      [{ name: "id", type: sql.Int, value: parseInt(id_prod) }],
     );
-    const unidadesPorPaquete = prodResult.recordset[0]?.Unidades_por_paquete || 1;
-    
+    const unidadesPorPaquete =
+      prodResult.recordset[0]?.Unidades_por_paquete || 1;
+
     // Obtener inventario disponible ordenado por fecha (FIFO)
     const invResult = await query(
       `SELECT id_inventario, Cantidad, Paquetes, Unidades_sueltas 
        FROM INVENTARIO 
        WHERE id_producto = @id AND Estado = 'Disponible' AND Cantidad > 0
        ORDER BY Fecha_movimiento ASC`,
-      [{ name: "id", type: sql.Int, value: parseInt(id_prod) }]
+      [{ name: "id", type: sql.Int, value: parseInt(id_prod) }],
     );
-    
+
     let restante = cantidadVendida;
-    
+
     for (const inv of invResult.recordset) {
       if (restante <= 0) break;
-      
+
       let paquetes = parseInt(inv.Paquetes) || 0;
       let sueltas = parseInt(inv.Unidades_sueltas) || 0;
       const totalDisponible = paquetes * unidadesPorPaquete + sueltas;
-      
+
       if (totalDisponible <= 0) continue;
-      
+
       const aDescontar = Math.min(totalDisponible, restante);
-      
+
       // Primero descontar de unidades sueltas
       const deSueltas = Math.min(sueltas, aDescontar);
       sueltas -= deSueltas;
       let aunFalta = aDescontar - deSueltas;
-      
+
       // Si falta, romper paquetes
       if (aunFalta > 0 && paquetes > 0) {
         const paquetesARomper = Math.ceil(aunFalta / unidadesPorPaquete);
         const unidadesDeRomper = paquetesARomper * unidadesPorPaquete;
         paquetes -= paquetesARomper;
-        sueltas += (unidadesDeRomper - aunFalta);
+        sueltas += unidadesDeRomper - aunFalta;
       }
-      
+
       const nuevaCantidad = paquetes * unidadesPorPaquete + sueltas;
-      const nuevoEstado = nuevaCantidad <= 0 ? 'Agotado' : 'Disponible';
-      
+      const nuevoEstado = nuevaCantidad <= 0 ? "Agotado" : "Disponible";
+
       // Actualizar inventario
       await query(
         `UPDATE INVENTARIO 
@@ -1190,17 +1222,19 @@ app.post("/api/detalles", async (req, res) => {
           { name: "paq", type: sql.Int, value: Math.max(0, paquetes) },
           { name: "sueltas", type: sql.Int, value: Math.max(0, sueltas) },
           { name: "estado", type: sql.NVarChar, value: nuevoEstado },
-          { name: "id", type: sql.Int, value: inv.id_inventario }
-        ]
+          { name: "id", type: sql.Int, value: inv.id_inventario },
+        ],
       );
-      
+
       restante -= aDescontar;
     }
-    
+
     if (restante > 0) {
-      console.warn(`⚠️ Stock insuficiente para producto ${id_prod}. Faltaron ${restante} unidades.`);
+      console.warn(
+        `⚠️ Stock insuficiente para producto ${id_prod}. Faltaron ${restante} unidades.`,
+      );
     }
-    
+
     res.status(201).json(r.recordset[0]);
   } catch (e) {
     console.error("Error en POST /api/detalles:", e);
@@ -1362,7 +1396,8 @@ app.get("/api/dashboard", async (req, res) => {
     res.json({
       ventasHoy: vh.ventasHoy,
       montoVentasHoy: parseFloat(vh.montoVentasHoy),
-      gananciaMes: parseFloat(vm.ventasMes || 0) - parseFloat(cm.comprasMes || 0),
+      gananciaMes:
+        parseFloat(vm.ventasMes || 0) - parseFloat(cm.comprasMes || 0),
       productosTotal: pt.productosTotal,
       productosBajoStock: bs.productosBajoStock,
       clientesActivos: cli.clientesActivos,
@@ -1461,19 +1496,25 @@ app.post("/api/caja/cierre", async (req, res) => {
 
     const caja = cajaRow.recordset[0];
     const { monto_final = 0 } = req.body;
-    
+
     // Obtener las compras realizadas durante la sesión de caja
-    const fechaAperturaStr = new Date(caja.fecha_apertura).toISOString().split("T")[0];
-    const aperturaDateTime = new Date(`${fechaAperturaStr}T${caja.hora_apertura}`);
-    
+    const fechaAperturaStr = new Date(caja.fecha_apertura)
+      .toISOString()
+      .split("T")[0];
+    const aperturaDateTime = new Date(
+      `${fechaAperturaStr}T${caja.hora_apertura}`,
+    );
+
     const comprasRow = await query(
       `SELECT ISNULL(SUM(Precio_total), 0) AS total_compras
        FROM COMPRA
        WHERE Fecha >= @apertura`,
-      [{ name: "apertura", type: sql.DateTime, value: aperturaDateTime }]
+      [{ name: "apertura", type: sql.DateTime, value: aperturaDateTime }],
     );
-    const totalCompras = parseFloat(comprasRow.recordset[0]?.total_compras || 0);
-    
+    const totalCompras = parseFloat(
+      comprasRow.recordset[0]?.total_compras || 0,
+    );
+
     // Ganancia Neta = Total Ventas - Total Compras
     const ganancia = parseFloat(caja.total_ventas || 0) - totalCompras;
     const ahora = new Date();
@@ -1602,14 +1643,30 @@ app.get("/api/reportes/compras", async (req, res) => {
     const params = [];
     if (desde && hasta) {
       whereClause = "WHERE c.Fecha BETWEEN @desde AND @hasta";
-      params.push({ name: "desde", type: sql.DateTime, value: new Date(desde + "T00:00:00") });
-      params.push({ name: "hasta", type: sql.DateTime, value: new Date(hasta + "T23:59:59") });
+      params.push({
+        name: "desde",
+        type: sql.DateTime,
+        value: new Date(desde + "T00:00:00"),
+      });
+      params.push({
+        name: "hasta",
+        type: sql.DateTime,
+        value: new Date(hasta + "T23:59:59"),
+      });
     } else if (desde) {
       whereClause = "WHERE c.Fecha >= @desde";
-      params.push({ name: "desde", type: sql.DateTime, value: new Date(desde + "T00:00:00") });
+      params.push({
+        name: "desde",
+        type: sql.DateTime,
+        value: new Date(desde + "T00:00:00"),
+      });
     } else if (hasta) {
       whereClause = "WHERE c.Fecha <= @hasta";
-      params.push({ name: "hasta", type: sql.DateTime, value: new Date(hasta + "T23:59:59") });
+      params.push({
+        name: "hasta",
+        type: sql.DateTime,
+        value: new Date(hasta + "T23:59:59"),
+      });
     }
 
     const r = await query(
@@ -1817,14 +1874,30 @@ app.get("/api/exportar/excel/:tipo", async (req, res) => {
       const params = [];
       if (desde && hasta) {
         whereClause = "WHERE c.Fecha BETWEEN @desde AND @hasta";
-        params.push({ name: "desde", type: sql.DateTime, value: new Date(desde + "T00:00:00") });
-        params.push({ name: "hasta", type: sql.DateTime, value: new Date(hasta + "T23:59:59") });
+        params.push({
+          name: "desde",
+          type: sql.DateTime,
+          value: new Date(desde + "T00:00:00"),
+        });
+        params.push({
+          name: "hasta",
+          type: sql.DateTime,
+          value: new Date(hasta + "T23:59:59"),
+        });
       } else if (desde) {
         whereClause = "WHERE c.Fecha >= @desde";
-        params.push({ name: "desde", type: sql.DateTime, value: new Date(desde + "T00:00:00") });
+        params.push({
+          name: "desde",
+          type: sql.DateTime,
+          value: new Date(desde + "T00:00:00"),
+        });
       } else if (hasta) {
         whereClause = "WHERE c.Fecha <= @hasta";
-        params.push({ name: "hasta", type: sql.DateTime, value: new Date(hasta + "T23:59:59") });
+        params.push({
+          name: "hasta",
+          type: sql.DateTime,
+          value: new Date(hasta + "T23:59:59"),
+        });
       }
 
       const r = await query(
@@ -2124,43 +2197,43 @@ app.get("/api/reportes/ganancias/diarias", async (req, res) => {
   try {
     const { fecha } = req.query;
     const fechaConsulta = fecha ? new Date(fecha) : new Date();
-    
+
     // Ventas del día
     const ventas = await query(
       `SELECT ISNULL(SUM(Total), 0) AS total_ventas
        FROM FACTURA_VENTA
        WHERE CAST(Fecha AS DATE) = CAST(@fecha AS DATE)`,
-      [{ name: "fecha", type: sql.DateTime, value: fechaConsulta }]
+      [{ name: "fecha", type: sql.DateTime, value: fechaConsulta }],
     );
-    
+
     // Compras del día
     const compras = await query(
       `SELECT ISNULL(SUM(Precio_total), 0) AS total_compras
        FROM COMPRA
        WHERE CAST(Fecha AS DATE) = CAST(@fecha AS DATE)`,
-      [{ name: "fecha", type: sql.DateTime, value: fechaConsulta }]
+      [{ name: "fecha", type: sql.DateTime, value: fechaConsulta }],
     );
-    
+
     const totalVentas = parseFloat(ventas.recordset[0]?.total_ventas || 0);
     const totalCompras = parseFloat(compras.recordset[0]?.total_compras || 0);
     const gananciaNeta = totalVentas - totalCompras;
-    
+
     // Cajas del día
     const cajas = await query(
       `SELECT monto_inicial, monto_final, hora_apertura, hora_cierre, Estado
        FROM CAJA
        WHERE CAST(fecha_apertura AS DATE) = CAST(@fecha AS DATE)`,
-      [{ name: "fecha", type: sql.DateTime, value: fechaConsulta }]
+      [{ name: "fecha", type: sql.DateTime, value: fechaConsulta }],
     );
-    
+
     let cajaAbierta = 0;
     let cajaCerrada = 0;
-    
+
     if (cajas.recordset.length > 0) {
       cajaAbierta = parseFloat(cajas.recordset[0].monto_inicial || 0);
       cajaCerrada = parseFloat(cajas.recordset[0].monto_final || 0);
     }
-    
+
     res.json({
       fecha: fechaConsulta,
       caja_abierta: cajaAbierta,
@@ -2168,7 +2241,7 @@ app.get("/api/reportes/ganancias/diarias", async (req, res) => {
       cajas: cajas.recordset,
       total_ventas: totalVentas,
       total_compras: totalCompras,
-      ganancia_neta: gananciaNeta
+      ganancia_neta: gananciaNeta,
     });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -2181,36 +2254,36 @@ app.get("/api/reportes/ganancias/semanales", async (req, res) => {
     const { fecha_inicio, fecha_fin } = req.query;
     const inicio = fecha_inicio ? new Date(fecha_inicio) : new Date();
     const fin = fecha_fin ? new Date(fecha_fin) : new Date();
-    
+
     const ventas = await query(
       `SELECT ISNULL(SUM(Total), 0) AS total_ventas
        FROM FACTURA_VENTA
        WHERE Fecha BETWEEN @inicio AND @fin`,
       [
         { name: "inicio", type: sql.DateTime, value: inicio },
-        { name: "fin", type: sql.DateTime, value: fin }
-      ]
+        { name: "fin", type: sql.DateTime, value: fin },
+      ],
     );
-    
+
     const compras = await query(
       `SELECT ISNULL(SUM(Precio_total), 0) AS total_compras
        FROM COMPRA
        WHERE Fecha BETWEEN @inicio AND @fin`,
       [
         { name: "inicio", type: sql.DateTime, value: inicio },
-        { name: "fin", type: sql.DateTime, value: fin }
-      ]
+        { name: "fin", type: sql.DateTime, value: fin },
+      ],
     );
-    
+
     const totalVentas = parseFloat(ventas.recordset[0]?.total_ventas || 0);
     const totalCompras = parseFloat(compras.recordset[0]?.total_compras || 0);
-    
+
     res.json({
       fecha_inicio: inicio,
       fecha_fin: fin,
       total_ventas: totalVentas,
       total_compras: totalCompras,
-      ganancia_neta: totalVentas - totalCompras
+      ganancia_neta: totalVentas - totalCompras,
     });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -2223,47 +2296,45 @@ app.get("/api/reportes/ganancias/mensuales", async (req, res) => {
     const { mes, anio } = req.query;
     const mesActual = mes ? parseInt(mes) : new Date().getMonth() + 1;
     const anioActual = anio ? parseInt(anio) : new Date().getFullYear();
-    
+
     const ventas = await query(
       `SELECT ISNULL(SUM(Total), 0) AS total_ventas
        FROM FACTURA_VENTA
        WHERE MONTH(Fecha) = @mes AND YEAR(Fecha) = @anio`,
       [
         { name: "mes", type: sql.Int, value: mesActual },
-        { name: "anio", type: sql.Int, value: anioActual }
-      ]
+        { name: "anio", type: sql.Int, value: anioActual },
+      ],
     );
-    
+
     const compras = await query(
       `SELECT ISNULL(SUM(Precio_total), 0) AS total_compras
        FROM COMPRA
        WHERE MONTH(Fecha) = @mes AND YEAR(Fecha) = @anio`,
       [
         { name: "mes", type: sql.Int, value: mesActual },
-        { name: "anio", type: sql.Int, value: anioActual }
-      ]
+        { name: "anio", type: sql.Int, value: anioActual },
+      ],
     );
-    
+
     const totalVentas = parseFloat(ventas.recordset[0]?.total_ventas || 0);
     const totalCompras = parseFloat(compras.recordset[0]?.total_compras || 0);
-    
+
     res.json({
       mes: mesActual,
       anio: anioActual,
       total_ventas: totalVentas,
       total_compras: totalCompras,
-      ganancia_neta: totalVentas - totalCompras
+      ganancia_neta: totalVentas - totalCompras,
     });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-
-
 /* ============================================================
    START
    ============================================================ */
 app.listen(PORT, () => {
-  console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`✅ Servidor corriendo en el puerto ${PORT}`);
 });

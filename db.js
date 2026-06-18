@@ -1,30 +1,18 @@
-const sql = require('mssql');
-
-const config = {
-  server: 'DESKTOP-BOI3R9R\\MSSQLSERVER01',
-  port: 1433,
-  user: 'admin_rosales',
-  password: 'Admin1234!',
-  database: 'ComercializadoraRosales',
-  options: {
-    trustServerCertificate: true,
-    encrypt: false
-  },
-  pool: {
-    max: 10,
-    min: 0,
-    idleTimeoutMillis: 30000
-  }
-};
+const mysql = require("mysql2/promise");
 
 let pool = null;
 
 async function getPool() {
   if (!pool) {
-    pool = await sql.connect(config);
-    console.log('✅ Conexión a SQL Server establecida correctamente');
+    pool = mysql.createPool({
+      uri: process.env.MYSQL_URL,
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+    });
+    console.log("✅ Conexión a MySQL establecida");
   }
   return pool;
 }
 
-module.exports = { getPool, sql };
+module.exports = { getPool };
